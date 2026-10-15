@@ -82,15 +82,23 @@ make test          # instance jetable + tests d'intégration
 
 ## Deployment Status
 
-Préparé le 2026-10-15, pas encore déployé. Fiche : `docs/mise-en-ligne-coolify.md`.
+Déployé le 2026-10-15 (commit 097e283), conteneur sain. Fiche : `docs/mise-en-ligne-coolify.md`.
 - Deployment path: coolify
-- Domain: à choisir (proposition : https://diag.kosm.io)
-- Coolify resource: Docker Compose sur `mathieu-kosmio/perfia-eval` branche `main`, service `app` port 8090
+- Domain: https://perfia-eval.kosm.io (A vers 51.91.166.222 ; dans Coolify : `https://perfia-eval.kosm.io:8090`)
+- Coolify resource: https://coolify.kosmio.dev/project/fkw4ocw04ocwcg4k8ssckwk0/environment/e8c88wk88k8k0og84cc4wso8/application/mnl8remspmqmo9m390kz8jsh
+  (projet « IA-Automatiation », environnement production), Docker Compose sur `mathieu-kosmio/perfia-eval` branche
+  `main`, service `app` port 8090
 - Auto-deploy on push: à décider
-- Secrets à poser dans Coolify : APP_BREVO_API_KEY ; variables : APP_MAIL_FROM, APP_BREVO_LIST_ID (3)
-- Superuser created: pending
-- Console settings (Application name/URL, proxy headers, mail): pending
+- Variables posées dans Coolify : APP_MAIL_FROM, APP_BREVO_LIST_ID (3), secret APP_BREVO_API_KEY. Après toute
+  modification d'une variable : **Redeploy** (Coolify signale « unapplied configuration change »).
+- Superuser created: yes (mathieu@kosm.io, 2026-10-15)
+- Console settings: Application URL https://perfia-eval.kosm.io, nom « PerfIA Diagnostic IA », proxy header
+  X-Forwarded-For, expéditeur « PerfIA · Kosmio » <dev@kosm.io> : faits le 2026-10-15
+- Staff accounts (`users`): aucun pour l'instant (page Équipe et export CSV inaccessibles tant qu'il n'y en a pas)
+- Sessions: `ibc` (Restitution des 25 ans de l'IBC, 16/10/2026 10 h, parcours court, identité au début, ouverte) ;
+  lien de la vue salle sur la page Équipe ou dans la console (clé animateur), jamais dans ce dépôt
 - S3 backups: pending
-- E-mail channel: Brevo (compte « Kosmio Dev », expéditeur validé dev@kosm.io, liste 3 « PerfIA »)
+- E-mail channel: Brevo (compte « Kosmio Dev », expéditeur validé dev@kosm.io, liste 3 « PerfIA ») ; envoi réel vérifié
+  en production le 2026-10-15 (lien de rapport sur le domaine public)
 - Image Docker : construite et testée en local le 2026-10-15
 - Local env: .local/env.sh

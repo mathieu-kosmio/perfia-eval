@@ -8,8 +8,8 @@ dépôt d'un diagnostic, rapport, en-têtes, 4 migrations appliquées).
 
 ## 0. Avant de commencer
 
-- [ ] Le code est sur GitHub : `git push -u origin main` depuis le dépôt (`mathieu-kosmio/perfia-eval`).
-- [ ] Le domaine est choisi. Proposition : `diag.kosm.io`. Dans la suite, `{domaine}` désigne ce nom.
+- [x] Le code est sur GitHub : `git push -u origin main` depuis le dépôt (`mathieu-kosmio/perfia-eval`).
+- [x] Le domaine est choisi : `perfia-eval.kosm.io`. Dans la suite, `{domaine}` désigne ce nom.
 - [ ] Décision sur les cas d'usage en brouillon : `node scripts/build-referentiel.mjs --strict` échoue tant que
       15 cas ne sont pas validés dans la Processothèque. Publier quand même (en connaissance de cause) ou valider
       d'abord.
@@ -41,9 +41,13 @@ Ressource > **Environment Variables** :
 
 Puis **Deploy**. Suivre le journal jusqu'à « healthy » (contrôle sur `/api/health`), en 1 à 3 minutes.
 
+Une variable ajoutée ou modifiée après coup n'entre dans le conteneur qu'au déploiement suivant : Coolify affiche
+alors « 1 unapplied configuration change detected ». Cliquer **Redeploy** (un simple *Restart* ne suffit pas).
+
 ## 4. Administrateur et réglages de la console
 
-1. Ressource > **Terminal** > conteneur `app` :
+1. Ressource > **Terminal** > conteneur `app` > **Connect** (invite `/pb #`). La commande se tape dans ce terminal
+   du conteneur, pas sur votre poste :
 
    ```
    /pb/pocketbase superuser upsert vous@kosm.io 'un-mot-de-passe-long' --dir /pb/pb_data

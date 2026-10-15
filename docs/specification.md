@@ -644,15 +644,16 @@ navigateur.
 Recommandation : **B**, sauf si l'IBC a déjà accepté une passation en direct. La V1 complète, avec la vue salle,
 servira pour le webinaire Xylofutur du 26/11 et la Journée de l'innovation du 3/12.
 
-### Lot 1 : V1 (développé le 15/10/2026, version 0.1.0, non déployé)
+### Lot 1 : V1 (développé le 15/10/2026, version 0.1.1, en ligne sur `perfia-eval.kosm.io`)
 
 - Fait : socle Skellyto allégé ; parcours complet et version courte ; identité au début ou à la fin ; sessions ;
   rapport imprimable ; envoi par e-mail ; vue salle ; page Équipe (sessions, QR code, suivi, export CSV, clé MCP) ;
   serveur MCP ; notice données ; conservation automatique ; 31 tests d'intégration ; vérification dans le navigateur.
 - Fait, au-delà du lot : catalogues Scierie et Menuiserie ; ordre des familles selon la fonction ; remarque pour les
   structures de 1 à 5 personnes sur les cas peu adaptés ; 5 illustrations SVG communes aux trois axes.
-- Reste à faire : déploiement (domaine, Coolify, Brevo, sauvegardes) ; validation des cas en brouillon dans la
-  Processothèque ; script de synchronisation de l'instantané.
+- Fait le 15/10 : déploiement Coolify sur `perfia-eval.kosm.io`, envoi Brevo vérifié en production, session `ibc`.
+- Reste à faire : sauvegardes S3 ; comptes de l'équipe ; validation des cas en brouillon dans la Processothèque ;
+  script de synchronisation de l'instantané.
 
 ### Lot 2 : V1.1 puis V2
 
@@ -677,7 +678,7 @@ servira pour le webinaire Xylofutur du 26/11 et la Journée de l'innovation du 3
 | Q6 | Charte co-brandée PerfIA ou charte Kosmio (règle 8 du CLAUDE.md) ? | Charte PerfIA, avec les logos Kosmio officiels |
 | Q7 | Où vont les prospects : base Clients PerfIA (Cockpit / D1) ou DB Projects (chantier C8) ? | Export CSV en V1, synchronisation une fois C8 tranché |
 | Q8 | Qui valide les 11 cas BE et transversaux en brouillon, et quand ? | Mathieu, avant la mise en ligne de la V1 |
-| Q9 | Quel domaine ? | `diag.kosm.io` |
+| Q9 | Quel domaine ? | Décidé le 15/10 : `perfia-eval.kosm.io` |
 | Q10 | Identité au début ou à la fin du parcours ? | Au début en session, à la fin pour le lien générique |
 | Q11 | L'organisateur (IBC) reçoit-il les contacts de ses membres consentants, ou seulement l'agrégat ? | L'agrégat par défaut, les contacts avec le consentement 3 |
 
