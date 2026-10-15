@@ -1,0 +1,203 @@
+[
+  {
+    "id": "_pb_users_auth_",
+    "name": "users",
+    "type": "auth",
+    "system": false,
+    "fields": [
+      { "id": "text3208210256", "name": "id", "type": "text", "primaryKey": true, "system": true, "required": true, "min": 15, "max": 15, "pattern": "^[a-z0-9]+$", "autogeneratePattern": "[a-z0-9]{15}" },
+      { "id": "password901924565", "name": "password", "type": "password", "system": true, "hidden": true, "required": true, "min": 8, "max": 0 },
+      { "id": "text2504183744", "name": "tokenKey", "type": "text", "system": true, "hidden": true, "required": true, "min": 30, "max": 60, "autogeneratePattern": "[a-zA-Z0-9]{50}" },
+      { "id": "email3885137012", "name": "email", "type": "email", "system": true, "required": true },
+      { "id": "bool1547992806", "name": "emailVisibility", "type": "bool", "system": true },
+      { "id": "bool256245529", "name": "verified", "type": "bool", "system": true },
+      { "id": "text1579384326", "name": "name", "type": "text", "required": true, "min": 1, "max": 80, "presentable": true },
+      { "id": "autodate2990389176", "name": "created", "type": "autodate", "onCreate": true, "onUpdate": false },
+      { "id": "autodate3332085495", "name": "updated", "type": "autodate", "onCreate": true, "onUpdate": true }
+    ],
+    "indexes": [
+      "CREATE UNIQUE INDEX idx_users_tokenKey ON users (tokenKey)",
+      "CREATE UNIQUE INDEX idx_users_email ON users (email COLLATE NOCASE) WHERE email != ''"
+    ],
+    "listRule": "id = @request.auth.id",
+    "viewRule": "id = @request.auth.id",
+    "createRule": null,
+    "updateRule": "id = @request.auth.id && @request.body.email:isset = false && @request.body.verified:isset = false",
+    "deleteRule": null,
+    "manageRule": null,
+    "authRule": "verified = true",
+    "passwordAuth": { "enabled": true, "identityFields": ["email"] },
+    "otp": {
+      "enabled": false,
+      "duration": 300,
+      "length": 8,
+      "emailTemplate": {
+        "subject": "Votre code de connexion {APP_NAME}",
+        "body": "<p>Bonjour,</p><p>Votre code de connexion {APP_NAME} : <strong>{OTP}</strong></p><p>Il est valable 5 minutes.</p>"
+      }
+    },
+    "verificationTemplate": {
+      "subject": "Vérifiez votre adresse e-mail {APP_NAME}",
+      "body": "<p>Bonjour,</p>\n<p>Un compte d'équipe {APP_NAME} vient d'être créé pour vous. Cliquez sur le bouton ci-dessous pour confirmer votre adresse e-mail.</p>\n<p>\n  <a class=\"btn\" href=\"{APP_URL}/_/#/auth/confirm-verification/{TOKEN}\" target=\"_blank\" rel=\"noopener\">Confirmer mon adresse</a>\n</p>\n<p>À bientôt,<br/>L'équipe {APP_NAME}</p>"
+    },
+    "resetPasswordTemplate": {
+      "subject": "Réinitialiser votre mot de passe {APP_NAME}",
+      "body": "<p>Bonjour,</p>\n<p>Cliquez sur le bouton ci-dessous pour choisir un nouveau mot de passe. Le lien est valable 30 minutes.</p>\n<p>\n  <a class=\"btn\" href=\"{APP_URL}/_/#/auth/confirm-password-reset/{TOKEN}\" target=\"_blank\" rel=\"noopener\">Choisir un nouveau mot de passe</a>\n</p>\n<p><i>Si vous n'êtes pas à l'origine de cette demande, ignorez cet e-mail : votre mot de passe reste inchangé.</i></p>\n<p>À bientôt,<br/>L'équipe {APP_NAME}</p>"
+    },
+    "confirmEmailChangeTemplate": {
+      "subject": "Confirmez votre nouvelle adresse e-mail {APP_NAME}",
+      "body": "<p>Bonjour,</p>\n<p>Cliquez sur le bouton ci-dessous pour confirmer votre nouvelle adresse e-mail.</p>\n<p>\n  <a class=\"btn\" href=\"{APP_URL}/_/#/auth/confirm-email-change/{TOKEN}\" target=\"_blank\" rel=\"noopener\">Confirmer la nouvelle adresse</a>\n</p>\n<p>À bientôt,<br/>L'équipe {APP_NAME}</p>"
+    },
+    "authAlert": {
+      "enabled": true,
+      "emailTemplate": {
+        "subject": "Nouvelle connexion à votre compte {APP_NAME}",
+        "body": "<p>Bonjour,</p>\n<p>Une connexion à votre compte {APP_NAME} vient d'être effectuée depuis un nouvel appareil ou un nouveau lieu.</p>\n<p><i>Si c'est bien vous, tout va bien. Sinon, changez votre mot de passe sans attendre.</i></p>\n<p>À bientôt,<br/>L'équipe {APP_NAME}</p>"
+      }
+    },
+    "mfa": { "enabled": false, "duration": 1800, "rule": "" },
+    "oauth2": { "enabled": false, "providers": [], "mappedFields": { "id": "", "name": "name", "username": "", "avatarURL": "" } },
+    "authToken": { "duration": 1209600 },
+    "passwordResetToken": { "duration": 1800 },
+    "emailChangeToken": { "duration": 1800 },
+    "verificationToken": { "duration": 259200 },
+    "fileToken": { "duration": 180 }
+  },
+  {
+    "id": "perfsessions001",
+    "name": "sessions",
+    "type": "base",
+    "system": false,
+    "fields": [
+      { "name": "id", "type": "text", "primaryKey": true, "system": true, "required": true, "min": 15, "max": 15, "pattern": "^[a-z0-9]+$", "autogeneratePattern": "[a-z0-9]{15}" },
+      { "name": "code", "type": "text", "required": true, "min": 2, "max": 24, "pattern": "^[a-z0-9][a-z0-9-]*$", "presentable": true },
+      { "name": "title", "type": "text", "required": true, "min": 3, "max": 140 },
+      { "name": "date", "type": "date", "required": false },
+      { "name": "organizer_name", "type": "text", "required": false, "max": 120 },
+      { "name": "organizer_logo", "type": "file", "required": false, "maxSelect": 1, "maxSize": 300000, "mimeTypes": ["image/png", "image/jpeg", "image/webp"], "thumbs": [], "protected": false },
+      { "name": "default_maillon", "type": "text", "required": false, "max": 40 },
+      { "name": "flow", "type": "select", "required": true, "maxSelect": 1, "values": ["court", "complet"] },
+      { "name": "identity_position", "type": "select", "required": true, "maxSelect": 1, "values": ["debut", "fin"] },
+      { "name": "pulse_question", "type": "text", "required": false, "max": 200 },
+      { "name": "baseline", "type": "json", "required": false, "maxSize": 2000 },
+      { "name": "partner_consent_label", "type": "text", "required": false, "max": 200 },
+      { "name": "presenter_key", "type": "text", "required": false, "hidden": true, "max": 64 },
+      { "name": "status", "type": "select", "required": true, "maxSelect": 1, "values": ["brouillon", "ouverte", "fermee"] },
+      { "name": "notes", "type": "text", "required": false, "max": 2000 },
+      { "name": "created", "type": "autodate", "onCreate": true, "onUpdate": false },
+      { "name": "updated", "type": "autodate", "onCreate": true, "onUpdate": true }
+    ],
+    "indexes": [
+      "CREATE UNIQUE INDEX idx_sessions_code ON sessions (code)"
+    ],
+    "listRule": "@request.auth.collectionName = \"users\"",
+    "viewRule": "@request.auth.collectionName = \"users\"",
+    "createRule": "@request.auth.collectionName = \"users\"",
+    "updateRule": "@request.auth.collectionName = \"users\"",
+    "deleteRule": "@request.auth.collectionName = \"users\""
+  },
+  {
+    "id": "perfdiagnost001",
+    "name": "diagnostics",
+    "type": "base",
+    "system": false,
+    "fields": [
+      { "name": "id", "type": "text", "primaryKey": true, "system": true, "required": true, "min": 15, "max": 15, "pattern": "^[a-z0-9]+$", "autogeneratePattern": "[a-z0-9]{15}" },
+      { "name": "session", "type": "relation", "collectionId": "perfsessions001", "required": false, "cascadeDelete": false, "minSelect": 0, "maxSelect": 1 },
+      { "name": "token", "type": "text", "required": false, "hidden": true, "max": 64 },
+      { "name": "referentiel_version", "type": "text", "required": false, "max": 40 },
+      { "name": "flow", "type": "select", "required": false, "maxSelect": 1, "values": ["court", "complet"] },
+      { "name": "firstname", "type": "text", "required": false, "max": 60, "presentable": true },
+      { "name": "lastname", "type": "text", "required": false, "max": 80 },
+      { "name": "company", "type": "text", "required": false, "max": 120 },
+      { "name": "role", "type": "text", "required": false, "max": 30 },
+      { "name": "email", "type": "text", "required": false, "max": 160 },
+      { "name": "phone", "type": "text", "required": false, "max": 30 },
+      { "name": "maillon", "type": "text", "required": false, "max": 40 },
+      { "name": "size", "type": "text", "required": false, "max": 10 },
+      { "name": "levels", "type": "json", "required": false, "maxSize": 2000 },
+      { "name": "pulse", "type": "number", "required": false, "min": 0, "max": 5, "onlyInt": true },
+      { "name": "cases", "type": "json", "required": false, "maxSize": 20000 },
+      { "name": "free_text", "type": "text", "required": false, "max": 280 },
+      { "name": "result", "type": "json", "required": false, "maxSize": 200000 },
+      { "name": "consent_processing", "type": "bool" },
+      { "name": "consent_contact", "type": "bool" },
+      { "name": "consent_partner", "type": "bool" },
+      { "name": "consent_news", "type": "bool" },
+      { "name": "consent_text_version", "type": "text", "required": false, "max": 20 },
+      { "name": "source", "type": "text", "required": false, "max": 120 },
+      { "name": "duration_s", "type": "number", "required": false, "min": 0, "onlyInt": true },
+      { "name": "lead_status", "type": "select", "required": false, "maxSelect": 1, "values": ["nouveau", "contacte", "qualifie", "converti", "perdu"] },
+      { "name": "notes", "type": "text", "required": false, "max": 2000 },
+      { "name": "report_status", "type": "select", "required": false, "maxSelect": 1, "values": ["a_envoyer", "envoye", "echec", "sans_envoi"] },
+      { "name": "report_attempts", "type": "number", "required": false, "min": 0, "onlyInt": true },
+      { "name": "report_sent_at", "type": "date", "required": false },
+      { "name": "report_requests", "type": "number", "required": false, "min": 0, "onlyInt": true },
+      { "name": "brevo_synced_at", "type": "date", "required": false },
+      { "name": "crm_ref", "type": "text", "required": false, "max": 200 },
+      { "name": "crm_synced_at", "type": "date", "required": false },
+      { "name": "anonymized", "type": "bool" },
+      { "name": "created", "type": "autodate", "onCreate": true, "onUpdate": false },
+      { "name": "updated", "type": "autodate", "onCreate": true, "onUpdate": true }
+    ],
+    "indexes": [
+      "CREATE UNIQUE INDEX idx_diagnostics_token ON diagnostics (token) WHERE token != ''",
+      "CREATE INDEX idx_diagnostics_session ON diagnostics (session, created)",
+      "CREATE INDEX idx_diagnostics_report ON diagnostics (report_status)",
+      "CREATE INDEX idx_diagnostics_created ON diagnostics (created)"
+    ],
+    "listRule": "@request.auth.collectionName = \"users\"",
+    "viewRule": "@request.auth.collectionName = \"users\"",
+    "createRule": null,
+    "updateRule": "@request.auth.collectionName = \"users\" && @request.body.token:isset = false && @request.body.result:isset = false && @request.body.levels:isset = false && @request.body.cases:isset = false",
+    "deleteRule": "@request.auth.collectionName = \"users\""
+  },
+  {
+    "id": "skelkeys0000001",
+    "name": "api_keys",
+    "type": "base",
+    "system": false,
+    "fields": [
+      { "name": "id", "type": "text", "primaryKey": true, "system": true, "required": true, "min": 15, "max": 15, "pattern": "^[a-z0-9]+$", "autogeneratePattern": "[a-z0-9]{15}" },
+      { "name": "user", "type": "relation", "collectionId": "_pb_users_auth_", "required": true, "cascadeDelete": true, "minSelect": 0, "maxSelect": 1 },
+      { "name": "name", "type": "text", "required": true, "min": 1, "max": 80, "presentable": true },
+      { "name": "prefix", "type": "text", "required": false, "min": 0, "max": 12 },
+      { "name": "hash", "type": "text", "required": true, "hidden": true, "min": 0, "max": 128 },
+      { "name": "expires", "type": "date", "required": true },
+      { "name": "last_used", "type": "date", "required": false },
+      { "name": "created", "type": "autodate", "onCreate": true, "onUpdate": false },
+      { "name": "updated", "type": "autodate", "onCreate": true, "onUpdate": true }
+    ],
+    "indexes": [
+      "CREATE UNIQUE INDEX idx_api_keys_hash ON api_keys (hash)",
+      "CREATE INDEX idx_api_keys_user ON api_keys (user)"
+    ],
+    "listRule": "user = @request.auth.id",
+    "viewRule": "user = @request.auth.id",
+    "createRule": null,
+    "updateRule": null,
+    "deleteRule": "user = @request.auth.id"
+  },
+  {
+    "id": "skeloauth000001",
+    "name": "oauth_clients",
+    "type": "base",
+    "system": false,
+    "fields": [
+      { "name": "id", "type": "text", "primaryKey": true, "system": true, "required": true, "min": 15, "max": 15, "pattern": "^[a-z0-9]+$", "autogeneratePattern": "[a-z0-9]{15}" },
+      { "name": "client_id", "type": "text", "required": true, "min": 8, "max": 64 },
+      { "name": "name", "type": "text", "required": true, "min": 1, "max": 80, "presentable": true },
+      { "name": "redirect_uris", "type": "text", "required": true, "min": 2, "max": 4000 },
+      { "name": "created", "type": "autodate", "onCreate": true, "onUpdate": false },
+      { "name": "updated", "type": "autodate", "onCreate": true, "onUpdate": true }
+    ],
+    "indexes": [
+      "CREATE UNIQUE INDEX idx_oauth_clients_id ON oauth_clients (client_id)"
+    ],
+    "listRule": null,
+    "viewRule": null,
+    "createRule": null,
+    "updateRule": null,
+    "deleteRule": null
+  }
+]

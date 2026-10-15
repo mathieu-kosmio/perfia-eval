@@ -1,0 +1,1783 @@
+{
+ "source": "Reconstitution des fichiers SQL de perfia-processotheque (seed.sql et migrations), 2026-10-15. Reflète les fichiers, pas la base de production.",
+ "generated_at": "2026-10-15",
+ "actor_types": [
+  {
+   "code": "ACT_SCIERIE",
+   "name": "Scierie"
+  },
+  {
+   "code": "ACT_EXPLOITANT_FORESTIER",
+   "name": "Exploitant forestier"
+  },
+  {
+   "code": "ACT_TRANSPORTEUR_BOIS",
+   "name": "Transporteur bois"
+  },
+  {
+   "code": "ACT_NEGOCE_BOIS",
+   "name": "Négoce bois"
+  },
+  {
+   "code": "ACT_MENUISERIE",
+   "name": "Menuiserie"
+  },
+  {
+   "code": "ACT_CONSTRUCTION_BOIS",
+   "name": "Construction bois / charpente"
+  },
+  {
+   "code": "ACT_BOIS_ENERGIE",
+   "name": "Bois energie"
+  },
+  {
+   "code": "ACT_BUREAU_ETUDES",
+   "name": "Bureau d etudes bois"
+  },
+  {
+   "code": "ACT_INDUSTRIE_PANNEAUX",
+   "name": "Industrie du bois (panneaux)"
+  }
+ ],
+ "skills": [
+  {
+   "code": "SKILL_ANOMALIE_VOLUME",
+   "name": "Détecter les anomalies de volume",
+   "description": "Compare le volume annoncé (contrat d'achat, BL grumes, lettre de voiture) au volume mesuré à l'arrivée (cubage bord de route, pont-bascule, cubage embarqué, scanner 3D de billons) et signale les écarts au-delà d'un seuil paramétré par essence, fournisseur et méthode de mesure. Hiérarchise les cas à vérifier en priorité (écart en valeur, récurrence sur un même fournisseur ou transporteur).",
+   "skill_category": "control",
+   "technical_complexity_score": 3,
+   "business_value": "Sur un poste achats bois qui pèse 50 à 70 % du chiffre d'affaires d'une scierie, 2 à 3 % d'écart systématique non détecté entre volume payé et volume reçu représentent une perte matière directe. La détection avant validation de la facture fournisseur évite des litiges tardifs impossibles à documenter une fois les grumes sciées.",
+   "implementation_requirements": "Historique de réceptions avec volume annoncé et volume mesuré (export ERP ou tableur), identification du fournisseur et de l'essence sur chaque ligne, définition des seuils d'alerte avec le responsable parc à grumes (les tolérances diffèrent entre cubage sous écorce et sur écorce, entre stère et m3).",
+   "limits": "Ne mesure rien elle-même : si le cubage d'entrée est faux, l'alerte l'est aussi. Ne distingue pas une erreur de mesure, une différence de méthode (cubage sous écorce vs sur écorce, coefficients d'écorce par essence) ou un manquant réel : chaque alerte reste à qualifier par un humain. Sans historique suffisant par fournisseur (quelques dizaines de livraisons), les seuils statistiques ne sont pas fiables et il faut se contenter de seuils fixes.",
+   "risks": "Un seuil trop sensible noie l'équipe sous les faux positifs et décrédibilise l'outil ; un seuil trop lâche laisse passer les vraies pertes. Une réclamation fournisseur envoyée sur la foi d'une alerte non vérifiée abîme la relation d'approvisionnement. Garde-fous : aucune réclamation automatique, revue humaine systématique avant tout contact fournisseur, traçage de la décision prise sur chaque alerte (justifiée / fausse alerte) pour recalibrer les seuils.",
+   "status": "validated",
+   "processes": [
+    {
+     "process": "PROC_SCI_CUBAGE",
+     "maillon": "ACT_SCIERIE",
+     "relevance": 4
+    },
+    {
+     "process": "PROC_SCI_ACHAT_GRUMES",
+     "maillon": "ACT_SCIERIE",
+     "relevance": null
+    },
+    {
+     "process": "PROC_SCI_STOCKAGE_PARC",
+     "maillon": "ACT_SCIERIE",
+     "relevance": null
+    },
+    {
+     "process": "PROC_EXF_CUBAGE_BR",
+     "maillon": "ACT_EXPLOITANT_FORESTIER",
+     "relevance": null
+    },
+    {
+     "process": "PROC_NEG_RECEPTION",
+     "maillon": "ACT_NEGOCE_BOIS",
+     "relevance": null
+    },
+    {
+     "process": "PROC_TRA_PESEE",
+     "maillon": "ACT_TRANSPORTEUR_BOIS",
+     "relevance": null
+    },
+    {
+     "process": "PROC_CHB_RECEPTION",
+     "maillon": "ACT_CONSTRUCTION_BOIS",
+     "relevance": null
+    },
+    {
+     "process": "PROC_BEN_RECEPTION",
+     "maillon": "ACT_BOIS_ENERGIE",
+     "relevance": null
+    },
+    {
+     "process": "PROC_BEN_QUALITE",
+     "maillon": "ACT_BOIS_ENERGIE",
+     "relevance": null
+    },
+    {
+     "process": "PROC_PAN_QUALITE",
+     "maillon": "ACT_INDUSTRIE_PANNEAUX",
+     "relevance": null
+    }
+   ]
+  },
+  {
+   "code": "SKILL_BET_CCTP_BLOCS",
+   "name": "Rédiger un CCTP à partir de la bibliothèque de paragraphes",
+   "description": "Assemble un premier jet de CCTP en piochant dans la bibliothèque de paragraphes validés du bureau d'études, puis adapte chaque bloc aux données du projet (ouvrages, essences, classes de service, exigences acoustiques et feu). Signale les paragraphes sans équivalent dans la bibliothèque, à rédiger par l'ingénieur.",
+   "skill_category": "generation",
+   "technical_complexity_score": 3,
+   "business_value": "La rédaction des pièces écrites est la première douleur exprimée par les bureaux d'études construction bois. Partir de blocs déjà relus réduit fortement le temps de rédaction d'un CCTP et limite les incohérences d'un projet à l'autre. La bibliothèque devient un actif du bureau.",
+   "implementation_requirements": "Bibliothèque de paragraphes CCTP validés par le bureau (par lot et par ouvrage), note de programme ou descriptif du projet, références normatives en vigueur retenues par le bureau.",
+   "limits": "Ne produit pas de prescription technique nouvelle : elle assemble et adapte l'existant. Ne vérifie pas que les références normatives citées sont à jour : la bibliothèque doit l'être. Le résultat reste un premier jet.",
+   "risks": "Un paragraphe inadapté au projet peut engager la responsabilité du bureau. Garde-fous : chaque bloc garde la référence de son paragraphe source, les adaptations sont surlignées, la relecture et la signature restent celles de l'ingénieur.",
+   "status": "draft_ai",
+   "processes": [
+    {
+     "process": "PROC_BET_CCTP",
+     "maillon": "ACT_BUREAU_ETUDES",
+     "relevance": 5
+    }
+   ]
+  },
+  {
+   "code": "SKILL_BET_COHERENCE_NOTE_CALCUL",
+   "name": "Contrôler la cohérence d'une note de calcul",
+   "description": "Relit une note de calcul produite par le logiciel de calcul et vérifie sa cohérence : hypothèses (charges, classes de service, durées), références normatives citées, correspondance entre les éléments calculés et les plans. Produit une liste de points à vérifier par l'ingénieur.",
+   "skill_category": "control",
+   "technical_complexity_score": 4,
+   "business_value": "Cas d'usage phare remonté par les ingénieurs structure. Le contrôle croisé note / plans / hypothèses est long et repose sur la vigilance d'une personne. Une relecture assistée réduit le risque d'incohérence non détectée, en appui du logiciel de calcul.",
+   "implementation_requirements": "Note de calcul exportée en texte ou PDF lisible, plans ou nomenclature des éléments, liste des hypothèses de référence du projet, règles internes de contrôle du bureau.",
+   "limits": "Ne refait aucun calcul et ne remplace pas le logiciel de calcul. Ne valide rien : elle signale des points à vérifier. Les plans au format image sont mal exploités. Projet à cadrer avec le bureau avant usage courant.",
+   "risks": "Responsabilité de l'ingénieur engagée : une fausse impression de contrôle serait plus dangereuse que l'absence d'outil. Garde-fous : l'ingénieur reste seul à valider et signer, chaque point signalé renvoie à la page de la note, les documents clients sont anonymisés si l'outil n'est pas hébergé sous contrôle du bureau.",
+   "status": "draft_ai",
+   "processes": [
+    {
+     "process": "PROC_BET_CALCUL",
+     "maillon": "ACT_BUREAU_ETUDES",
+     "relevance": 5
+    },
+    {
+     "process": "PROC_BET_PLANS",
+     "maillon": "ACT_BUREAU_ETUDES",
+     "relevance": 3
+    }
+   ]
+  },
+  {
+   "code": "SKILL_BET_VEILLE_NORMATIVE",
+   "name": "Interroger le corpus normatif du bureau avec citation des sources",
+   "description": "Répond à une question technique (DTU, Eurocodes, règles feu, textes réglementaires) en s'appuyant uniquement sur le corpus documentaire détenu par l'entreprise, avec la référence exacte du document et de l'article à chaque réponse. Signale quand le corpus ne permet pas de répondre.",
+   "skill_category": "summarization",
+   "technical_complexity_score": 3,
+   "business_value": "La veille normative et la recherche dans les textes reviennent à chaque table de bureaux d'études. Une réponse sourcée en quelques secondes évite de longues recherches et sécurise les échanges techniques, à condition que le corpus soit à jour.",
+   "implementation_requirements": "Corpus de normes, DTU et textes détenus légalement par l'entreprise (abonnement, achats), tenu à jour ; outil capable de chercher dans un ensemble de documents (projet avec sources, base documentaire).",
+   "limits": "Ne connaît que le corpus fourni : une norme absente ou périmée produit une réponse incomplète ou fausse. Ne remplace pas l'interprétation de l'ingénieur sur un cas limite. Les normes sous licence ne doivent pas être chargées dans un outil qui en ferait un usage non autorisé.",
+   "risks": "Une référence obsolète appliquée à un projet engage la responsabilité du bureau. Garde-fous : citation obligatoire du document et de l'article, date de version affichée, réponse « hors corpus » plutôt qu'une réponse générale, revue périodique du corpus.",
+   "status": "draft_ai",
+   "processes": [
+    {
+     "process": "PROC_BET_CCTP",
+     "maillon": "ACT_BUREAU_ETUDES",
+     "relevance": 4
+    },
+    {
+     "process": "PROC_BET_CALCUL",
+     "maillon": "ACT_BUREAU_ETUDES",
+     "relevance": 3
+    },
+    {
+     "process": "PROC_BET_THERMIQUE",
+     "maillon": "ACT_BUREAU_ETUDES",
+     "relevance": 3
+    }
+   ]
+  },
+  {
+   "code": "SKILL_BL_GRUMES",
+   "name": "Lire un bon de livraison grumes",
+   "description": "Extrait d'un bon de livraison de grumes (PDF, scan ou photo) les données structurées nécessaires à l'entrée en stock : fournisseur, date, essences, volume, nombre de grumes, numéro de lot, références de certification PEFC/FSC. Alimente directement l'ERP ou le tableur de suivi du parc à grumes sans ressaisie.",
+   "skill_category": "document_extraction",
+   "technical_complexity_score": 2,
+   "business_value": "Une scierie qui reçoit 5 à 15 camions par jour passe 30 à 60 minutes quotidiennes à ressaisir des BL, avec des erreurs d'essence ou de volume qui se propagent au stock et à la valorisation. L'extraction automatique ramène ce temps à une simple relecture et fiabilise le rapprochement BL / cubage / facture fournisseur.",
+   "implementation_requirements": "Accès aux BL au format numérique (PDF fournisseur, scan ou photo du document papier prise à la réception), OCR pour les documents papier, liste des fournisseurs et essences habituels pour normaliser les libellés (par exemple « Dgl » → douglas). Un scan lisible à plat vaut mieux qu'une photo froissée prise dans la cabine.",
+   "limits": "Les BL manuscrits (fréquents chez les petits exploitants) ou les scans dégradés donnent une extraction partielle : les champs illisibles doivent ressortir à nul, pas être devinés. Ne convertit pas les unités ambiguës sans règle explicite (stère vs m3, sur écorce vs sous écorce). Ne vérifie pas que la livraison correspond à la commande : c'est le rôle du contrôle de cohérence commande / livraison.",
+   "risks": "Une essence ou un volume mal lus et intégrés sans contrôle faussent le stock, la traçabilité et le paiement fournisseur. Garde-fous : relecture humaine des champs à faible confiance avant intégration, rapprochement systématique avec le cubage ou la pesée à réception, champ illisible → nul + signalement plutôt qu'une valeur devinée, conservation du document source lié à l'enregistrement.",
+   "status": "validated",
+   "processes": [
+    {
+     "process": "PROC_SCI_RECEPTION_GRUMES",
+     "maillon": "ACT_SCIERIE",
+     "relevance": 5
+    },
+    {
+     "process": "PROC_SCI_ACHAT_GRUMES",
+     "maillon": "ACT_SCIERIE",
+     "relevance": null
+    }
+   ]
+  },
+  {
+   "code": "SKILL_CERTIF_EXTRACT",
+   "name": "Extraire les données d'un certificat PEFC/FSC",
+   "description": "Extrait d'un certificat PEFC ou FSC (chaîne de contrôle ou gestion forestière) le numéro, le détenteur, l'organisme certificateur, le périmètre couvert et les dates de validité. Alimente le registre des certificats fournisseurs utilisé pour la diligence raisonnée RDUE et les audits de chaîne de contrôle.",
+   "skill_category": "document_extraction",
+   "technical_complexity_score": 2,
+   "business_value": "Lors d'un audit de chaîne de contrôle PEFC/FSC ou d'un contrôle RDUE, l'entreprise doit prouver que chaque fournisseur était certifié à la date de livraison. Tenir ce registre à la main sur des dizaines de fournisseurs prend des heures et laisse passer des certificats expirés ; l'extraction automatique le remplit en quelques secondes par document et permet des alertes d'échéance.",
+   "implementation_requirements": "Certificats au format PDF (ou scans lisibles), un emplacement de classement unique (dossier partagé, GED ou ERP), et une personne désignée pour traiter les alertes d'expiration. Prévoir la collecte annuelle des attestations auprès des fournisseurs.",
+   "limits": "Se limite aux données présentes sur le document : ne vérifie pas la validité réelle du certificat auprès des bases PEFC/FSC (un certificat suspendu peut présenter des dates valides). Ne juge pas si le périmètre couvre bien les produits réellement livrés (groupe de produits, site). Les attestations non standardisées (courriers de fournisseurs) donnent une extraction partielle à compléter à la main.",
+   "risks": "Un certificat expiré, suspendu ou hors périmètre non détecté crée un faux sentiment de conformité RDUE et peut invalider les déclarations de vente certifiée. Garde-fous : croiser systématiquement le numéro extrait avec la base publique de l'organisme certificateur (info.fsc.org, PEFC), déclencher une alerte avant chaque date de fin de validité, champ illisible → nul + signalement, et faire valider le registre par le responsable qualité avant chaque audit.",
+   "status": "validated",
+   "processes": [
+    {
+     "process": "PROC_SCI_CERTIFICATS",
+     "maillon": "ACT_SCIERIE",
+     "relevance": 5
+    },
+    {
+     "process": "PROC_EXF_SECURITE",
+     "maillon": "ACT_EXPLOITANT_FORESTIER",
+     "relevance": null
+    },
+    {
+     "process": "PROC_NEG_CONFORMITE",
+     "maillon": "ACT_NEGOCE_BOIS",
+     "relevance": null
+    },
+    {
+     "process": "PROC_TRA_CONFORMITE",
+     "maillon": "ACT_TRANSPORTEUR_BOIS",
+     "relevance": null
+    }
+   ]
+  },
+  {
+   "code": "SKILL_CLASSEMENT_QUALITE",
+   "name": "Assister le classement qualité du bois",
+   "description": "Aide au classement des sciages à partir d'images ou de relevés de singularités (nœuds sains ou noirs, flaches, fentes, poches de résine, entre-écorce) et propose une classe selon le référentiel retenu : classement d'aspect (EN 1611-1 pour les résineux, choix QF pour le chêne) ou pré-tri avant classement structure. Fournit la justification de la classe proposée, singularité par singularité.",
+   "skill_category": "classification",
+   "technical_complexity_score": 3,
+   "business_value": "Homogénéise le classement entre opérateurs et entre équipes : un déclassement injustifié d'une classe sur un paquet d'avivés représente plusieurs dizaines d'euros par m3. Accélère aussi la formation des nouveaux trieurs en explicitant les critères appliqués.",
+   "implementation_requirements": "Photos correctes des pièces (éclairage régulier, faces visibles) ou relevés de singularités, référentiel de classement choisi et paramétré (EN 1611-1, choix internes clients), exemples classés validés par le classeur de l'entreprise pour calibrer l'aide.",
+   "limits": "Aide à la décision uniquement : le classement structure des bois marqués CE (EN 14081, classes C18-C30) relève du classement visuel par un opérateur formé STI ou d'une machine homologuée, jamais de cette compétence. Une photo ne montre pas l'humidité, la densité ni les faces cachées de la pièce. Les singularités limites (nœud à la frontière de deux classes) restent à trancher par le classeur.",
+   "risks": "Un surclassement systématique engage la conformité produit et la responsabilité de l'entreprise en cas de litige client ; un sous-classement détruit de la marge en silence. Garde-fous : validation humaine de chaque classe engageante, contrôle croisé périodique entre classement proposé et classement final pour détecter une dérive, et exclusion explicite du champ CE structurel.",
+   "status": "validated",
+   "processes": [
+    {
+     "process": "PROC_MEN_CONTROLE",
+     "maillon": "ACT_MENUISERIE",
+     "relevance": null
+    },
+    {
+     "process": "PROC_SCI_CLASSEMENT_MECA",
+     "maillon": "ACT_SCIERIE",
+     "relevance": null
+    },
+    {
+     "process": "PROC_SCI_CLASSEMENT_QUALITE",
+     "maillon": "ACT_SCIERIE",
+     "relevance": null
+    },
+    {
+     "process": "PROC_EXF_CUBAGE_BR",
+     "maillon": "ACT_EXPLOITANT_FORESTIER",
+     "relevance": null
+    },
+    {
+     "process": "PROC_NEG_RECEPTION",
+     "maillon": "ACT_NEGOCE_BOIS",
+     "relevance": null
+    },
+    {
+     "process": "PROC_TRA_PESEE",
+     "maillon": "ACT_TRANSPORTEUR_BOIS",
+     "relevance": null
+    },
+    {
+     "process": "PROC_CHB_RECEPTION",
+     "maillon": "ACT_CONSTRUCTION_BOIS",
+     "relevance": null
+    },
+    {
+     "process": "PROC_BEN_RECEPTION",
+     "maillon": "ACT_BOIS_ENERGIE",
+     "relevance": null
+    },
+    {
+     "process": "PROC_BEN_QUALITE",
+     "maillon": "ACT_BOIS_ENERGIE",
+     "relevance": null
+    },
+    {
+     "process": "PROC_PAN_QUALITE",
+     "maillon": "ACT_INDUSTRIE_PANNEAUX",
+     "relevance": null
+    }
+   ]
+  },
+  {
+   "code": "SKILL_CLASSER_DEMANDES",
+   "name": "Classer des demandes clients",
+   "description": "Trie les demandes entrantes d'une entreprise de la filière bois (email, formulaire, téléphone retranscrit) par nature — demande de devis sciages ou charpente, question de disponibilité stock, SAV, réclamation sur une livraison, demande de documents (certificats, fiches techniques) — et les oriente vers le bon interlocuteur avec un niveau d'urgence. Prépare un résumé en une ligne pour accélérer la prise en charge.",
+   "skill_category": "classification",
+   "technical_complexity_score": 2,
+   "business_value": "Dans une scierie ou un négoce, la boîte commune reçoit des dizaines de demandes hétérogènes par jour, dépilées au fil de l'eau : une demande de devis urgente peut attendre deux jours derrière des questions de disponibilité. Le tri automatique ramène le délai de première réponse de plusieurs jours à quelques heures et évite qu'une réclamation ne dégénère en litige faute de prise en charge rapide.",
+   "implementation_requirements": "Accès aux demandes entrantes (boîte email partagée, formulaire du site), liste des catégories et des destinataires internes (commercial sciages, ADV, SAV), quelques dizaines d'exemples de demandes déjà classées pour calibrer les catégories sur le vocabulaire réel des clients.",
+   "limits": "Une demande multi-objets (devis + réclamation dans le même message) n'est classée que sur son objet dominant : l'objet secondaire doit être signalé, pas ignoré. Les demandes très courtes ou allusives (« comme la dernière fois ») nécessitent l'historique client pour être comprises. Ne rédige pas la réponse et ne juge pas la solvabilité ou le sérieux du demandeur.",
+   "risks": "Un mauvais routage peut faire attendre une demande urgente ou envoyer une réclamation à un commercial absent ; une catégorie attribuée avec une confiance faible doit partir en file de revue humaine plutôt qu'être routée automatiquement. Garde-fous : seuil de confiance en dessous duquel la demande reste en tri manuel, revue hebdomadaire des erreurs de classement pour ajuster les catégories, aucune réponse automatique envoyée au client sans validation.",
+   "status": "validated",
+   "processes": [
+    {
+     "process": "PROC_SCI_PREPA_COMMANDE",
+     "maillon": "ACT_SCIERIE",
+     "relevance": 4
+    },
+    {
+     "process": "PROC_EXF_VENTE",
+     "maillon": "ACT_EXPLOITANT_FORESTIER",
+     "relevance": null
+    },
+    {
+     "process": "PROC_NEG_VENTE",
+     "maillon": "ACT_NEGOCE_BOIS",
+     "relevance": null
+    },
+    {
+     "process": "PROC_CHB_ETUDE_PRIX",
+     "maillon": "ACT_CONSTRUCTION_BOIS",
+     "relevance": null
+    },
+    {
+     "process": "PROC_BET_CONSULTATION",
+     "maillon": "ACT_BUREAU_ETUDES",
+     "relevance": null
+    }
+   ]
+  },
+  {
+   "code": "SKILL_COHERENCE_CMD_LIV",
+   "name": "Contrôler la cohérence commande / livraison",
+   "description": "Compare ligne à ligne une commande, le bon de livraison et les constats de réception (quantités, essences, qualités, sections, références, certificats annoncés) et produit la liste des écarts avec leur gravité. S'applique aussi bien à la réception de grumes en scierie qu'à la réception de produits en négoce ou de matériaux en atelier de menuiserie.",
+   "skill_category": "control",
+   "technical_complexity_score": 3,
+   "business_value": "Les écarts entre commande et livraison (volume livré inférieur, essence substituée, qualité déclassée) découverts tardivement finissent en factures contestées et en litiges fournisseurs. Un contrôle systématique à réception permet de signaler l'écart sous 24 h, quand la réserve est encore opposable, au lieu de le découvrir au rapprochement de facture des semaines plus tard.",
+   "implementation_requirements": "Commande et bon de livraison accessibles sous forme exploitable (données ERP ou documents numérisés avec extraction préalable), correspondance des références entre le fournisseur et l'entreprise (une même section peut être libellée différemment), règles de tolérance métier (écart de volume acceptable sur du bois, par exemple ±2 % au cubage).",
+   "limits": "Ne détecte que les écarts entre données déclarées : un écart physique non mesuré (volume réel différent du BL, qualité réelle inférieure) échappe au contrôle si la réception n'a pas été saisie. Ne sait pas arbitrer si l'écart est commercialement acceptable ni si une substitution d'essence a été convenue par téléphone. Les correspondances de références ambiguës doivent ressortir en « non rapproché », pas en faux « conforme ».",
+   "risks": "Un écart signalé mais non traité impacte la facturation, le stock et la relation fournisseur ; à l'inverse, trop de fausses alertes fait ignorer les vraies. Garde-fous : chaque alerte doit être statuée (acceptée, réserve émise, avoir demandé) et tracée, seuils de tolérance validés par le responsable achats, verdict « conforme » réservé aux rapprochements complets — un document illisible ou une ligne non rapprochée déclenche un signalement, jamais un conforme par défaut.",
+   "status": "validated",
+   "processes": [
+    {
+     "process": "PROC_SCI_RECEPTION_GRUMES",
+     "maillon": "ACT_SCIERIE",
+     "relevance": 5
+    },
+    {
+     "process": "PROC_MEN_RECEPTION_MAT",
+     "maillon": "ACT_MENUISERIE",
+     "relevance": null
+    },
+    {
+     "process": "PROC_MEN_FACTURATION",
+     "maillon": "ACT_MENUISERIE",
+     "relevance": null
+    },
+    {
+     "process": "PROC_SCI_EXPEDITION",
+     "maillon": "ACT_SCIERIE",
+     "relevance": null
+    },
+    {
+     "process": "PROC_EXF_DEBARDAGE",
+     "maillon": "ACT_EXPLOITANT_FORESTIER",
+     "relevance": null
+    },
+    {
+     "process": "PROC_NEG_SOURCING",
+     "maillon": "ACT_NEGOCE_BOIS",
+     "relevance": null
+    },
+    {
+     "process": "PROC_NEG_STOCK",
+     "maillon": "ACT_NEGOCE_BOIS",
+     "relevance": null
+    },
+    {
+     "process": "PROC_NEG_EXPEDITION",
+     "maillon": "ACT_NEGOCE_BOIS",
+     "relevance": null
+    },
+    {
+     "process": "PROC_TRA_PLANIF",
+     "maillon": "ACT_TRANSPORTEUR_BOIS",
+     "relevance": null
+    },
+    {
+     "process": "PROC_TRA_CHARGEMENT",
+     "maillon": "ACT_TRANSPORTEUR_BOIS",
+     "relevance": null
+    },
+    {
+     "process": "PROC_TRA_TRANSPORT",
+     "maillon": "ACT_TRANSPORTEUR_BOIS",
+     "relevance": null
+    },
+    {
+     "process": "PROC_CHB_APPRO",
+     "maillon": "ACT_CONSTRUCTION_BOIS",
+     "relevance": null
+    },
+    {
+     "process": "PROC_CHB_LOGISTIQUE",
+     "maillon": "ACT_CONSTRUCTION_BOIS",
+     "relevance": null
+    },
+    {
+     "process": "PROC_BEN_APPRO_CONNEXES",
+     "maillon": "ACT_BOIS_ENERGIE",
+     "relevance": null
+    },
+    {
+     "process": "PROC_BEN_LOGISTIQUE",
+     "maillon": "ACT_BOIS_ENERGIE",
+     "relevance": null
+    },
+    {
+     "process": "PROC_PAN_APPRO",
+     "maillon": "ACT_INDUSTRIE_PANNEAUX",
+     "relevance": null
+    },
+    {
+     "process": "PROC_PAN_EXPEDITION",
+     "maillon": "ACT_INDUSTRIE_PANNEAUX",
+     "relevance": null
+    }
+   ]
+  },
+  {
+   "code": "SKILL_CREATE_LOT",
+   "name": "Créer automatiquement un lot bois",
+   "description": "Assemble une fiche de lot bois structurée (essence, qualité, dimensions, volume, origine parcellaire, références de certification PEFC/FSC, rattachement au BL d'entrée) à partir des données de réception déjà extraites. La fiche est prête pour la traçabilité RDUE, l'entrée en stock et la vente, avec un identifiant de lot cohérent avec la numérotation de l'entreprise.",
+   "skill_category": "generation",
+   "technical_complexity_score": 3,
+   "business_value": "La constitution manuelle des lots à réception est une double saisie source d'erreurs : un lot sans origine parcellaire ou sans référence de certificat devient invendable en certifié et fragilise la déclaration de diligence raisonnée. La génération automatique garantit des fiches complètes et homogènes, et fait gagner plusieurs minutes par camion réceptionné.",
+   "implementation_requirements": "Données de réception structurées (extraction du BL, cubage ou pesée), règles de numérotation des lots de l'entreprise, référentiel des essences et qualités utilisé en interne, accès en écriture à l'outil de gestion des stocks (ERP scierie ou tableur de parc).",
+   "limits": "Ne crée pas l'information manquante : si le BL n'indique ni parcelle ni certificat, la fiche de lot sort incomplète et doit être signalée comme telle, pas complétée par défaut. Ne décide pas du découpage en lots (regrouper deux camions du même fournisseur ou les séparer reste un choix du responsable de parc). Ne vérifie pas la validité des certificats référencés.",
+   "risks": "Un lot mal constitué (origine erronée, certificat rattaché à tort) fausse toute la traçabilité aval jusqu'au client final et peut invalider une vente en bois certifié. Garde-fous : champs obligatoires pour la traçabilité (origine, essence, volume) bloquants s'ils sont vides, validation humaine avant diffusion du lot à la vente, lien conservé vers les documents source (BL, ticket de pesée) pour audit, champ douteux → nul + signalement.",
+   "status": "validated",
+   "processes": [
+    {
+     "process": "PROC_SCI_RECEPTION_GRUMES",
+     "maillon": "ACT_SCIERIE",
+     "relevance": 5
+    },
+    {
+     "process": "PROC_SCI_SCIAGE",
+     "maillon": "ACT_SCIERIE",
+     "relevance": null
+    },
+    {
+     "process": "PROC_EXF_TRACA_RDUE",
+     "maillon": "ACT_EXPLOITANT_FORESTIER",
+     "relevance": null
+    }
+   ]
+  },
+  {
+   "code": "SKILL_EXF_ANALYSE_CONTRAT",
+   "name": "Analyser un contrat d'achat de bois",
+   "description": "Extrait d'un contrat de vente de bois (vente en bloc et sur pied, vente à la mesure, contrat d'approvisionnement) les clauses qui engagent l'exploitant : identification de la parcelle et de la coupe, volume estimé ou garanti, prix et modalités de révision, délais d'exploitation et de vidange, clauses particulières (pénalités, état des lieux, période de chasse, portance des sols). Restitue une synthèse structurée pour relecture avant signature ou pour suivi d'exécution.",
+   "skill_category": "document_extraction",
+   "technical_complexity_score": 2,
+   "business_value": "Une clause de délai d'exploitation ou de pénalité passée inaperçue coûte cher : dépassement du délai de vidange facturé, caution retenue après un état des lieux contesté. La lecture assistée fait ressortir en quelques minutes les clauses engageantes d'un contrat de plusieurs pages et évite les découvertes tardives en cours de chantier.",
+   "implementation_requirements": "Contrats au format PDF texte ou scannés avec OCR de bonne qualité (les contrats ONF et des coopératives sont majoritairement dactylographiés), grille des clauses à surveiller propre à l'entreprise (délais, cautions, pénalités).",
+   "limits": "Ne fournit pas de conseil juridique : elle localise et restitue les clauses, elle ne juge pas leur validité ni leur caractère abusif. Les renvois à des cahiers des clauses générales (par exemple les clauses de vente ONF) ne sont pas analysés si le document annexe n'est pas fourni. Un scan dégradé ou une clause manuscrite ajoutée en marge peuvent échapper à l'extraction : les champs illisibles ressortent à nul avec signalement.",
+   "risks": "Une clause mal extraite ou omise donne un faux sentiment de maîtrise du contrat ; le risque principal est de ne pas relire l'original. Garde-fous : la synthèse renvoie systématiquement au numéro d'article ou de page de chaque clause pour vérification, relecture humaine obligatoire avant signature, mention explicite des sections non analysées (annexes absentes, pages illisibles).",
+   "status": "draft_ai",
+   "processes": [
+    {
+     "process": "PROC_EXF_VENTE",
+     "maillon": "ACT_EXPLOITANT_FORESTIER",
+     "relevance": 5
+    }
+   ]
+  },
+  {
+   "code": "SKILL_EXF_EXTRACTION_PLAN_COUPE",
+   "name": "Extraire les informations d'un plan de coupe",
+   "description": "Structure les informations d'un plan de coupe ou d'un dossier de préparation de chantier forestier : identification de la parcelle, essences et volumes prévisionnels, surface, contraintes d'accès et d'exploitation (portance, cours d'eau, zones Natura 2000, lignes électriques, période autorisée), places de dépôt. Produit une fiche chantier exploitable pour la planification des équipes d'abattage et de débardage.",
+   "skill_category": "document_extraction",
+   "technical_complexity_score": 3,
+   "business_value": "Les informations d'un dossier de coupe sont dispersées entre le contrat, la fiche de martelage et les cartes : une contrainte d'accès découverte le jour du chantier immobilise un porteur et une équipe. La fiche structurée met les contraintes sous les yeux du conducteur de travaux avant de mobiliser les machines, et évite les allers-retours et les pénalités pour non-respect des clauses.",
+   "implementation_requirements": "Dossiers de coupe numérisés (PDF, scans lisibles), cartes et plans annexes fournis avec le dossier ; une trame de fiche chantier interne pour cadrer la restitution. L'extraction porte sur le texte : les informations uniquement cartographiques doivent être reportées à la main.",
+   "limits": "Ne lit pas les cartes : une zone humide ou un cloisonnement visibles seulement sur le plan graphique ne seront pas extraits ; la compétence le signale quand le texte renvoie à une carte. Ne vérifie pas les contraintes réglementaires non mentionnées dans le dossier (elle ne consulte ni le PLU ni les arrêtés préfectoraux). Les annotations manuscrites de terrain sont souvent mal lues : champs douteux à nul avec signalement.",
+   "risks": "Une contrainte omise (période d'interdiction, portance limitée) peut conduire à exploiter hors des clauses avec pénalités, dégâts au parterre de coupe ou risque juridique. Garde-fous : relecture de la fiche par le conducteur de travaux avant lancement, liste explicite des renvois non analysés (cartes, annexes absentes), rapprochement avec le contrat de vente pour vérifier la cohérence des délais et volumes.",
+   "status": "draft_ai",
+   "processes": [
+    {
+     "process": "PROC_EXF_PREPA_CHANTIER",
+     "maillon": "ACT_EXPLOITANT_FORESTIER",
+     "relevance": 5
+    }
+   ]
+  },
+  {
+   "code": "SKILL_EXF_FICHE_LOT",
+   "name": "Préparer une fiche de lot forestier",
+   "description": "Génère une fiche de lot bord de route structurée et homogène (essence, volume cubé, qualités et découpes, origine parcellaire, références PEFC/FSC, photos associées) à partir des relevés de cubage bord de route (carnet, application de cubage ou données machine). La fiche est prête à diffuser aux acheteurs (scieries, négoces) ou à publier sur une place de marché.",
+   "skill_category": "generation",
+   "technical_complexity_score": 2,
+   "business_value": "Un lot bien présenté se vend plus vite et plus cher : les fiches hétérogènes ou incomplètes déclenchent des allers-retours téléphoniques et des visites inutiles. La génération automatique met un lot en marché le jour du cubage au lieu de plusieurs jours après, avec une présentation constante d'un lot à l'autre — origine et certification incluses, ce que les acheteurs soumis à la RDUE exigent désormais.",
+   "implementation_requirements": "Relevés de cubage bord de route exploitables (application mobile, carnet retranscrit, listing d'abatteuse au format StanForD le cas échéant), rattachement du lot à sa parcelle d'origine, références des certificats de gestion durable, trame de fiche de lot de l'entreprise.",
+   "limits": "Restitue les données de cubage sans les vérifier : une erreur de mesure ou une double saisie au carnet se retrouvent dans la fiche. Ne propose pas de prix et n'évalue pas la qualité réelle des bois au-delà de ce que le cubeur a relevé. Si l'origine parcellaire ou la certification manquent, la fiche sort avec ces champs vides et signalés — elle ne les complète jamais par défaut.",
+   "risks": "Une fiche annonçant un volume ou une qualité supérieurs au réel engage la responsabilité du vendeur et finit en litige à réception ; une origine erronée compromet la diligence raisonnée de l'acheteur. Garde-fous : validation de la fiche par le responsable d'exploitation avant diffusion, cohérence volume fiche / volume carnet vérifiée automatiquement, mention explicite des champs non renseignés, photos datées et géolocalisées jointes quand elles existent.",
+   "status": "draft_ai",
+   "processes": [
+    {
+     "process": "PROC_EXF_CUBAGE_BR",
+     "maillon": "ACT_EXPLOITANT_FORESTIER",
+     "relevance": 5
+    }
+   ]
+  },
+  {
+   "code": "SKILL_EXF_ORDRE_TRANSPORT",
+   "name": "Générer un ordre de transport",
+   "description": "Rédige un ordre de transport grumier complet à partir des informations de vente et du lot bord de route : lieu de chargement précis (accès piste, coordonnées GPS de la place de dépôt), destinataire et horaires de réception de l'usine, essence, volume et nombre de billons, découpes, références du lot et documents à présenter (BL, certificats). Le document est prêt à transmettre au transporteur ou à intégrer dans une lettre de voiture.",
+   "skill_category": "generation",
+   "technical_complexity_score": 2,
+   "business_value": "Un ordre de transport incomplet, dicté par téléphone, produit des camions qui cherchent la place de dépôt, chargent le mauvais lot ou arrivent hors des horaires de réception de la scierie — chaque incident coûte des heures de grumier immobilisé. L'ordre structuré supprime les échanges téléphoniques répétés et réduit les erreurs de chargement.",
+   "implementation_requirements": "Données de vente et de lot accessibles (acheteur, lieu de livraison, volume), coordonnées GPS ou description d'accès des places de dépôt, contraintes de tonnage connues (itinéraires 44 t ou 57 t grumiers selon les départements, restrictions de barrières de dégel).",
+   "limits": "Ne choisit pas le transporteur, ne négocie pas le tarif et ne vérifie pas la disponibilité des camions. Ne connaît les restrictions d'accès (portance, barrière de dégel, largeur de piste) que si elles sont saisies dans le dossier chantier. Ne remplace pas la lettre de voiture réglementaire : il la prépare.",
+   "risks": "Une adresse de chargement approximative ou un tonnage incompatible avec l'itinéraire mettent le transporteur en difficulté, voire en infraction ; l'exploitant reste responsable des informations transmises. Garde-fous : relecture de l'ordre par le responsable logistique avant envoi, champs critiques (lieu exact, volume, destinataire) obligatoires et bloquants s'ils sont vides, mention systématique des documents de traçabilité à joindre au chargement.",
+   "status": "draft_ai",
+   "processes": [
+    {
+     "process": "PROC_EXF_VENTE",
+     "maillon": "ACT_EXPLOITANT_FORESTIER",
+     "relevance": 4
+    }
+   ]
+  },
+  {
+   "code": "SKILL_EXF_SUIVI_DOC_TRACA",
+   "name": "Suivre les documents de traçabilité",
+   "description": "Vérifie pour chaque lot de bois la présence et la complétude des documents exigés par la diligence raisonnée RDUE et les chaînes de contrôle PEFC/FSC : géolocalisation de la parcelle de récolte, contrat ou autorisation de coupe, certificats de gestion durable en cours de validité, DDS (déclaration de diligence) et son numéro de référence. Produit une liste des pièces manquantes ou expirées par lot.",
+   "skill_category": "compliance",
+   "technical_complexity_score": 3,
+   "business_value": "Depuis l'entrée en application du RDUE, un lot sans géolocalisation ni DDS est invendable auprès des acheteurs soumis au règlement ; reconstituer un dossier a posteriori prend des heures par lot. Le contrôle systématique à la constitution du lot détecte les pièces manquantes quand il est encore simple de les obtenir, et évite les blocages de vente et les non-conformités en audit de chaîne de contrôle.",
+   "implementation_requirements": "Registre des lots avec rattachement parcellaire, dossier documentaire numérisé par lot (contrats, certificats, DDS), liste de contrôle des pièces exigées selon le type de vente (France, export UE, bois certifié ou non), dates de validité des certificats saisies.",
+   "limits": "Contrôle la présence et les dates des documents, pas leur authenticité : un certificat falsifié ou une géolocalisation erronée passent le contrôle documentaire. Ne soumet pas la DDS dans le système d'information européen et ne juge pas le niveau de risque du pays ou de l'essence au sens RDUE. Un document mal classé (rattaché au mauvais lot) apparaît à tort comme manquant.",
+   "risks": "Le principal risque est le faux sentiment de conformité : un dossier documentairement complet peut rester non conforme sur le fond. Garde-fous : le rapport distingue explicitement « pièces présentes » et « conformité validée », revue périodique par le référent certification, croisement des numéros de certificats avec les bases publiques PEFC/FSC lors des contrôles importants, alerte à échéance des certificats (par exemple 60 jours avant expiration).",
+   "status": "draft_ai",
+   "processes": [
+    {
+     "process": "PROC_EXF_TRACA_RDUE",
+     "maillon": "ACT_EXPLOITANT_FORESTIER",
+     "relevance": 5
+    }
+   ]
+  },
+  {
+   "code": "SKILL_EXF_SYNTHESE_CHANTIER",
+   "name": "Préparer une synthèse de chantier",
+   "description": "Produit une synthèse d'avancement d'un chantier d'exploitation forestière à partir des relevés terrain (carnets d'abattage, volumes débardés bord de route, listings d'abatteuse) : volumes abattus et débardés par essence, écart avec le prévisionnel du plan de coupe, incidents (casse, portance, panne), reste à exploiter et échéance du délai de vidange. Format court, diffusable au propriétaire, à l'acheteur ou en réunion d'équipe.",
+   "skill_category": "summarization",
+   "technical_complexity_score": 2,
+   "business_value": "Le suivi de chantier repose souvent sur des appels au chef d'équipe et des volumes notés sur carnet : le dépassement d'un délai de vidange ou un retard sur le prévisionnel se découvrent trop tard. Une synthèse hebdomadaire automatique donne une vision fiable de l'avancement, sécurise les acomptes facturables et professionnalise la communication avec les propriétaires et les acheteurs.",
+   "implementation_requirements": "Relevés terrain remontés régulièrement (application mobile, photos de carnet retranscrites, fichiers de production d'abatteuse), volumes prévisionnels du plan de coupe pour le calcul d'écart, dates contractuelles (délais d'abattage et de vidange) saisies.",
+   "limits": "La synthèse vaut ce que valent les relevés : des volumes non remontés depuis une semaine donnent un avancement faussement en retard. Ne mesure rien elle-même et ne détecte pas un incident non signalé par l'équipe. Les données machine (StanForD) et les cubages bord de route peuvent différer sensiblement : la synthèse doit afficher la source de chaque volume, pas les fusionner silencieusement.",
+   "risks": "Une synthèse trop optimiste transmise au propriétaire ou à l'acheteur engage l'exploitant sur des volumes ou des délais non tenus. Garde-fous : chaque chiffre est daté et sourcé (carnet, machine, estimation), les écarts supérieurs à un seuil (par exemple 10 % du prévisionnel) sont mis en évidence pour vérification, relecture par le conducteur de travaux avant diffusion externe.",
+   "status": "draft_ai",
+   "processes": [
+    {
+     "process": "PROC_EXF_PREPA_CHANTIER",
+     "maillon": "ACT_EXPLOITANT_FORESTIER",
+     "relevance": 4
+    }
+   ]
+  },
+  {
+   "code": "SKILL_FACTURE",
+   "name": "Préparer une facture depuis commande et livraison",
+   "description": "Assemble un brouillon de facture à partir de la commande et du bon de livraison signé : lignes reprises de la commande, quantités ajustées aux quantités réellement livrées, unités du métier (m3, m2, ml, pièces), TVA applicable, références de commande et de BL rappelées. Signale les écarts commande / livré qui doivent être tranchés avant émission (reliquat, livraison partielle, substitution).",
+   "skill_category": "generation",
+   "technical_complexity_score": 2,
+   "business_value": "Dans une PME de la filière, la facturation attend souvent la fin de semaine et les BL s'accumulent : jours de retard de facturation, prestations livrées jamais facturées, avoirs à répétition. Le brouillon automatique dès le retour du BL signé raccourcit le délai d'émission de plusieurs jours et réduit les oublis de lignes, donc le besoin en trésorerie.",
+   "implementation_requirements": "Commande et BL rapprochés et accessibles sous forme structurée, tarifs et conditions de la commande à jour, paramètres de TVA par type de prestation (vente de bois, pose, transport), format de facture conforme aux mentions obligatoires et compatible avec l'outil comptable ; anticiper le passage à la facturation électronique (Factur-X).",
+   "limits": "Ne fixe aucun prix : elle reprend strictement les conditions de la commande ; une remise négociée oralement ou une révision de prix non saisie n'apparaîtront pas. Ne tranche pas les écarts commande / livré : elle les signale et laisse le choix (facturer le livré, attendre le reliquat, émettre un avoir). Ne gère pas les situations de travaux (retenue de garantie, avancement) sans paramétrage spécifique.",
+   "risks": "Une facture émise sans contrôle peut comporter un mauvais taux de TVA, une quantité contestable ou ignorer un litige de réception en cours — et un avoir coûte plus cher qu'une relecture. Garde-fous : validation comptable ou du chargé d'affaires obligatoire avant émission, blocage des brouillons dont le BL n'est pas signé ou dont l'écart commande / livré n'est pas statué, numérotation gérée par l'outil comptable et jamais par la compétence.",
+   "status": "validated",
+   "processes": [
+    {
+     "process": "PROC_MEN_FACTURATION",
+     "maillon": "ACT_MENUISERIE",
+     "relevance": null
+    },
+    {
+     "process": "PROC_NEG_FACTURATION",
+     "maillon": "ACT_NEGOCE_BOIS",
+     "relevance": null
+    },
+    {
+     "process": "PROC_TRA_DOCUMENTAIRE",
+     "maillon": "ACT_TRANSPORTEUR_BOIS",
+     "relevance": null
+    },
+    {
+     "process": "PROC_TRA_FACTURATION",
+     "maillon": "ACT_TRANSPORTEUR_BOIS",
+     "relevance": null
+    },
+    {
+     "process": "PROC_BET_DOE",
+     "maillon": "ACT_BUREAU_ETUDES",
+     "relevance": null
+    }
+   ]
+  },
+  {
+   "code": "SKILL_MEN_ANALYSE_DEMANDE",
+   "name": "Analyser une demande client menuiserie",
+   "description": "Lit une demande client menuiserie (email, extrait de CCTP, DPGF, plans joints) et la restitue en exigences structurées : ouvrages demandés (fenêtres, portes, escaliers, agencement), quantités et dimensions, essences et matériaux, finitions, vitrages, performances attendues (thermique, acoustique, classement AEV), contraintes de pose et délais. Prépare le travail du chargé d'affaires avant chiffrage.",
+   "skill_category": "document_extraction",
+   "technical_complexity_score": 2,
+   "business_value": "Le dépouillement d'un CCTP de menuiserie prend une à plusieurs heures par affaire, et une exigence manquée (vitrage spécifique, quincaillerie imposée, performance Acotherm) se découvre au pire moment : après commande ou à la réception. La synthèse structurée réduit le temps de dépouillement et fiabilise le périmètre chiffré, donc la marge.",
+   "implementation_requirements": "Accès aux demandes et pièces jointes (email, PDF), OCR de qualité pour les documents scannés ; une liste des ouvrages types et du vocabulaire interne de l'atelier améliore la restitution.",
+   "limits": "Dépend de la lisibilité des pièces : plans manuscrits, scans dégradés ou DPGF en image réduisent fortement la fiabilité. Ne lit pas les cotes sur les plans graphiques (voir la compétence d'extraction de plans) et ne détecte pas une contradiction entre le CCTP et les plans si un seul des deux est fourni. Ne remplace pas la lecture métier complète du CCTP pour les affaires à enjeu : elle la prépare et la accélère.",
+   "risks": "Une exigence mal extraite ou omise se propage au devis, au métré et à la commande matière ; le coût de correction croît à chaque étape. Garde-fous : validation de la synthèse par le chargé d'affaires avant chiffrage, chaque exigence renvoyée avec sa source (article CCTP, page), champs illisibles ou ambigus → nul + signalement dans une liste « à clarifier avec le client », jamais de valeur devinée.",
+   "status": "validated",
+   "processes": [
+    {
+     "process": "PROC_MEN_DEMANDE",
+     "maillon": "ACT_MENUISERIE",
+     "relevance": 5
+    }
+   ]
+  },
+  {
+   "code": "SKILL_MEN_CLASSER",
+   "name": "Qualifier une demande de menuiserie",
+   "description": "Qualifie les demandes entrantes d'une menuiserie : type d'ouvrage (fenêtres, portes, escalier, agencement), neuf ou rénovation, marché public ou privé, niveau de complexité (standard catalogue, sur mesure courant, sur mesure technique) et charge bureau d'études estimée. Permet de prioriser les chiffrages et d'écarter rapidement les demandes hors périmètre de l'atelier.",
+   "skill_category": "classification",
+   "technical_complexity_score": 2,
+   "business_value": "Le chiffrage est le goulot d'étranglement des menuiseries : les chargés d'affaires passent du temps sur des demandes hors cible ou peu qualifiées pendant que les bonnes affaires attendent. Une qualification à l'arrivée concentre le temps de chiffrage sur les demandes gagnables et cohérentes avec le carnet de charge de l'atelier.",
+   "implementation_requirements": "Accès aux demandes entrantes et à leurs pièces jointes, définition du périmètre de l'entreprise (ouvrages réalisés, zone d'intervention, taille d'affaire), quelques dizaines de demandes passées qualifiées pour calibrer les niveaux de complexité sur la réalité de l'atelier.",
+   "limits": "L'estimation de complexité et de charge bureau d'études reste indicative : une demande d'apparence simple peut cacher une contrainte technique (bâtiment classé, cintrage, performance feu) que seule la lecture du dossier révèle. Ne juge ni la solvabilité du client ni l'intérêt commercial stratégique d'une affaire. Les demandes très incomplètes sortent en « à qualifier manuellement », pas dans une catégorie par défaut.",
+   "risks": "Une sous-estimation de complexité fausse la priorisation et les délais annoncés au client ; une demande rentable mal classée peut être écartée à tort. Garde-fous : la qualification est une aide au tri, la décision de chiffrer ou non reste au chargé d'affaires, seuil de confiance en dessous duquel la demande part en revue humaine, revue périodique des affaires perdues ou sous-marges pour recalibrer les critères.",
+   "status": "validated",
+   "processes": [
+    {
+     "process": "PROC_MEN_DEMANDE",
+     "maillon": "ACT_MENUISERIE",
+     "relevance": 4
+    }
+   ]
+  },
+  {
+   "code": "SKILL_MEN_CR_CHANTIER",
+   "name": "Créer un compte rendu de pose",
+   "description": "Rédige un compte rendu de pose structuré à partir des notes, dictées vocales et photos du poseur : travaux réalisés, ouvrages posés avec repères, réserves constatées (jeu de dormant, réglage d'ouvrant, reprise de finition), points de vigilance (support dégradé, cote différente du relevé), prochaines étapes et fournitures manquantes. Format prêt à joindre au dossier chantier ou au procès-verbal de réception.",
+   "skill_category": "generation",
+   "technical_complexity_score": 2,
+   "business_value": "Les poseurs rédigent peu : les réserves restent orales et se perdent, et en cas de litige à la réception ou en SAV l'entreprise n'a rien d'opposable. Un compte rendu propre généré depuis trois notes vocales et cinq photos prend deux minutes au lieu de trente, trace les réserves le jour même et accélère la levée de réserves et la facturation du solde.",
+   "implementation_requirements": "Notes ou dictées du poseur et photos de chantier (smartphone), trame de compte rendu de l'entreprise, liste des chantiers et repères d'ouvrages pour rattacher le CR à la bonne affaire.",
+   "limits": "Ne constate que ce qui est renseigné : un désordre non photographié ou non mentionné par le poseur n'apparaîtra pas. Ne qualifie pas juridiquement les réserves et ne remplace pas le procès-verbal de réception signé par le client. Les dictées en environnement bruyant ou le jargon d'atelier peuvent être mal retranscrits : les passages incertains sont signalés plutôt qu'interprétés.",
+   "risks": "Un CR incomplet ou approximatif affaiblit la position de l'entreprise en cas de litige ; une réserve mal formulée peut être contestée. Garde-fous : relecture des réserves par le conducteur de travaux avant diffusion, photos datées rattachées à chaque réserve, distinction explicite entre constat du poseur et reformulation, signature ou validation client recueillie sur le document final et non sur le brouillon.",
+   "status": "validated",
+   "processes": [
+    {
+     "process": "PROC_MEN_RECEPTION_CHANTIER",
+     "maillon": "ACT_MENUISERIE",
+     "relevance": 4
+    },
+    {
+     "process": "PROC_MEN_POSE",
+     "maillon": "ACT_MENUISERIE",
+     "relevance": null
+    },
+    {
+     "process": "PROC_CHB_LEVAGE_POSE",
+     "maillon": "ACT_CONSTRUCTION_BOIS",
+     "relevance": null
+    },
+    {
+     "process": "PROC_BET_SUIVI",
+     "maillon": "ACT_BUREAU_ETUDES",
+     "relevance": null
+    }
+   ]
+  },
+  {
+   "code": "SKILL_MEN_DEVIS",
+   "name": "Générer une trame de devis menuiserie",
+   "description": "Produit une première trame de devis menuiserie à partir des exigences analysées et du métré : postes structurés par ouvrage (fourniture, pose, dépose éventuelle), quantités issues du métré, unités correctes (unité, m2, ml), temps de fabrication et de pose estimés à valider. Les prix restent volontairement vides : la trame prépare le chiffrage, elle ne le fait pas à la place du chargé d'affaires.",
+   "skill_category": "generation",
+   "technical_complexity_score": 3,
+   "business_value": "Le chiffrage est le principal goulot d'étranglement des menuiseries : des demandes restent sans réponse plusieurs semaines et des affaires se perdent par simple délai. Partir d'une trame complète plutôt que d'une page blanche fait gagner une à deux heures par devis et réduit les oublis de postes (dépose, finitions, déplacement, nacelle) qui rongent la marge.",
+   "implementation_requirements": "Exigences structurées (issues de l'analyse de la demande) et métré disponibles, bibliothèque d'ouvrages et libellés de postes de l'entreprise, temps unitaires indicatifs de fabrication et de pose si l'entreprise en dispose.",
+   "limits": "Ne fixe aucun prix et n'estime pas les débourses : elle propose une structure et des quantités à valider commercialement. Les temps estimés sont indicatifs et ne tiennent pas compte de la charge réelle de l'atelier. Ne détecte pas un poste absent des exigences d'entrée : si le métré a oublié une baie, le devis l'oubliera aussi.",
+   "risks": "Un devis envoyé sans relecture peut engager l'entreprise sur des quantités fausses ou des postes manquants ; le client retiendra le devis signé, pas l'intention. Garde-fous : validation ligne à ligne par le chargé d'affaires avant envoi, prix unitaires laissés à nul pour rendre l'envoi en l'état impossible, liste des hypothèses et exclusions générée avec la trame (supports, existants, autorisations) à vérifier systématiquement.",
+   "status": "validated",
+   "processes": [
+    {
+     "process": "PROC_MEN_CHIFFRAGE",
+     "maillon": "ACT_MENUISERIE",
+     "relevance": 5
+    },
+    {
+     "process": "PROC_EXF_VENTE",
+     "maillon": "ACT_EXPLOITANT_FORESTIER",
+     "relevance": null
+    },
+    {
+     "process": "PROC_NEG_VENTE",
+     "maillon": "ACT_NEGOCE_BOIS",
+     "relevance": null
+    },
+    {
+     "process": "PROC_CHB_ETUDE_PRIX",
+     "maillon": "ACT_CONSTRUCTION_BOIS",
+     "relevance": null
+    },
+    {
+     "process": "PROC_BET_CONSULTATION",
+     "maillon": "ACT_BUREAU_ETUDES",
+     "relevance": null
+    }
+   ]
+  },
+  {
+   "code": "SKILL_MEN_EXTRACT_PLAN",
+   "name": "Extraire les cotes et exigences d'un plan",
+   "description": "Extrait d'un plan PDF de menuiserie les repères d'ouvrages, leurs cotes (largeur, hauteur, épaisseur, allège), les références et exigences techniques associées (essence, quincaillerie, vitrage, performances) et les restitue en tableau exploitable pour l'étude et le débit. Fonctionne sur les plans architecte, les carnets de détails et les nomenclatures de baies.",
+   "skill_category": "document_extraction",
+   "technical_complexity_score": 3,
+   "business_value": "La ressaisie des cotes d'un carnet de baies vers le tableur d'étude ou la GPAO est longue et source d'inversions largeur/hauteur qui coûtent des ouvrages entiers refaits. L'extraction automatique en tableau supprime l'essentiel de la ressaisie et permet de croiser systématiquement plans et CCTP, là où le dépouillement manuel se limite souvent à un échantillon.",
+   "implementation_requirements": "Plans PDF lisibles, idéalement vectoriels (texte sélectionnable) ; les scans doivent être droits et nets. Une convention de lecture des cotes (largeur x hauteur, cotes tableau ou cotes dormant) doit être fixée en entrée pour éviter les ambiguïtés.",
+   "limits": "Les plans non cotés, à l'échelle approximative ou vectorisés en image donnent une extraction dégradée ; la compétence ne mesure jamais une cote à l'échelle sur le dessin. L'ambiguïté cote tableau / cote dormant / cote fabrication n'est pas tranchée automatiquement : elle est signalée. Ne remplace pas le relevé sur site en rénovation, où les cotes réelles priment toujours sur le plan.",
+   "risks": "Une cote erronée ou une inversion largeur/hauteur se propage au débit et à la commande : l'erreur se paie en matière et en délai. Garde-fous : contrôle humain obligatoire des dimensions critiques avant lancement en fabrication, repères sans cote ou cotes illisibles → nul + signalement, jamais de valeur estimée, rapprochement automatique avec le CCTP ou la DPGF quand ils sont disponibles pour détecter les incohérences.",
+   "status": "validated",
+   "processes": [
+    {
+     "process": "PROC_MEN_ETUDE",
+     "maillon": "ACT_MENUISERIE",
+     "relevance": 5
+    }
+   ]
+  },
+  {
+   "code": "SKILL_MEN_METRE",
+   "name": "Assister le métré (quantitatif)",
+   "description": "Transforme un relevé de cotes pris sur site (notes, croquis annotés, dictée du métreur) en quantitatif structuré : ouvrages repérés, dimensions, surfaces et linéaires calculés, quantités par type d'ouvrage. Prépare directement le chiffrage et la liste de débit, en signalant les cotes manquantes ou incohérentes avant qu'elles ne deviennent des erreurs de fabrication.",
+   "skill_category": "planning",
+   "technical_complexity_score": 2,
+   "business_value": "Entre le carnet de relevé et le tableur de chiffrage, les erreurs de recopie et les cotes oubliées sont le quotidien des ateliers : un aller-retour sur site pour reprendre une cote coûte une demi-journée. La mise au propre automatique du relevé réduit le temps de saisie et fait ressortir immédiatement ce qui manque, pendant qu'il est encore facile de re-mesurer.",
+   "implementation_requirements": "Relevé de cotes exploitable (notes structurées, photos de croquis lisibles, dictée retranscrite), conventions de l'entreprise (unités, sens largeur x hauteur, cotes tableau ou dormant), trame de quantitatif cible (tableur ou logiciel de chiffrage).",
+   "limits": "Dépend entièrement de la complétude du relevé : elle ne remplace pas une prise de cotes sur site et ne recalcule pas une cote oubliée. Les croquis très raturés ou les photos floues donnent une restitution partielle. Ne fait pas d'optimisation de débit ni de calepinage : elle produit le quantitatif, pas le plan de découpe.",
+   "risks": "Un quantitatif faux se propage au devis puis à la commande matière : trop commandé, c'est de la marge perdue ; pas assez, c'est un chantier arrêté. Garde-fous : recoupement systématique avec les plans quand ils existent, cotes illisibles ou incohérentes (largeur supérieure à la hauteur pour une porte, par exemple) → signalées et jamais corrigées silencieusement, validation du quantitatif par le métreur avant transmission au chiffrage.",
+   "status": "validated",
+   "processes": [
+    {
+     "process": "PROC_MEN_METRE",
+     "maillon": "ACT_MENUISERIE",
+     "relevance": 5
+    },
+    {
+     "process": "PROC_CHB_METRE",
+     "maillon": "ACT_CONSTRUCTION_BOIS",
+     "relevance": null
+    },
+    {
+     "process": "PROC_CHB_PLANS_EXE",
+     "maillon": "ACT_CONSTRUCTION_BOIS",
+     "relevance": null
+    },
+    {
+     "process": "PROC_BET_AVANT_PROJET",
+     "maillon": "ACT_BUREAU_ETUDES",
+     "relevance": null
+    },
+    {
+     "process": "PROC_BET_CALCUL",
+     "maillon": "ACT_BUREAU_ETUDES",
+     "relevance": null
+    },
+    {
+     "process": "PROC_BET_PLANS",
+     "maillon": "ACT_BUREAU_ETUDES",
+     "relevance": null
+    },
+    {
+     "process": "PROC_BET_THERMIQUE",
+     "maillon": "ACT_BUREAU_ETUDES",
+     "relevance": null
+    },
+    {
+     "process": "PROC_BET_CCTP",
+     "maillon": "ACT_BUREAU_ETUDES",
+     "relevance": null
+    }
+   ]
+  },
+  {
+   "code": "SKILL_MEN_NOMENCLATURE",
+   "name": "Générer une nomenclature / liste de débit",
+   "description": "Génère la liste de débit d'un ouvrage de menuiserie à partir des plans et exigences : pièces nommées (montants, traverses, panneaux), sections et longueurs avec surcotes d'usinage, quantités, matériaux (essence, dérivés, quincaillerie associée). Sort un tableau prêt pour le débit à la scie à format ou l'import dans la GPAO, cohérent avec les repères des plans.",
+   "skill_category": "generation",
+   "technical_complexity_score": 3,
+   "business_value": "Établir une liste de débit à la main pour un escalier ou une série de fenêtres prend des heures et une pièce oubliée bloque l'assemblage en attendant un re-débit. La génération automatique fiabilise l'approvisionnement matière et fait gagner un temps de préparation significatif, en particulier sur les ouvrages répétitifs déclinés en plusieurs dimensions.",
+   "implementation_requirements": "Plans structurés ou cotes extraites (repères, dimensions), règles de l'atelier : surcotes de débit et d'usinage par type de pièce, sections commerciales disponibles, correspondance essences / fournisseurs. L'import GPAO nécessite un format de fichier convenu.",
+   "limits": "Sensible à la qualité des plans : une cote fausse en entrée donne une pièce fausse en sortie. Ne fait pas l'optimisation de débit dans les plateaux ou panneaux (imbrication, gestion des chutes) : cela reste à l'optimiseur ou à l'atelier. Ne connaît pas les usages non écrits de l'atelier (surcote spécifique d'un poste de travail, préférence de sens de fil) s'ils ne sont pas paramétrés.",
+   "risks": "Une nomenclature fausse génère des sur-commandes ou des manques de matière et peut immobiliser un ouvrage en cours d'assemblage. Garde-fous : contrôle de la liste par le chef d'atelier avant débit, vérification automatique de cohérence entre le nombre de pièces et les repères du plan, pièces dont la cote source est douteuse marquées « à vérifier » et jamais lancées en débit sans validation.",
+   "status": "validated",
+   "processes": [
+    {
+     "process": "PROC_MEN_DEBIT",
+     "maillon": "ACT_MENUISERIE",
+     "relevance": 4
+    },
+    {
+     "process": "PROC_MEN_USINAGE",
+     "maillon": "ACT_MENUISERIE",
+     "relevance": null
+    },
+    {
+     "process": "PROC_CHB_METRE",
+     "maillon": "ACT_CONSTRUCTION_BOIS",
+     "relevance": null
+    },
+    {
+     "process": "PROC_CHB_PLANS_EXE",
+     "maillon": "ACT_CONSTRUCTION_BOIS",
+     "relevance": null
+    },
+    {
+     "process": "PROC_BET_AVANT_PROJET",
+     "maillon": "ACT_BUREAU_ETUDES",
+     "relevance": null
+    },
+    {
+     "process": "PROC_BET_CALCUL",
+     "maillon": "ACT_BUREAU_ETUDES",
+     "relevance": null
+    },
+    {
+     "process": "PROC_BET_PLANS",
+     "maillon": "ACT_BUREAU_ETUDES",
+     "relevance": null
+    },
+    {
+     "process": "PROC_BET_THERMIQUE",
+     "maillon": "ACT_BUREAU_ETUDES",
+     "relevance": null
+    },
+    {
+     "process": "PROC_BET_CCTP",
+     "maillon": "ACT_BUREAU_ETUDES",
+     "relevance": null
+    }
+   ]
+  },
+  {
+   "code": "SKILL_MEN_RELANCE",
+   "name": "Préparer une relance fournisseur",
+   "description": "Rédige des relances fournisseurs ciblées à partir du carnet de commandes : référence de commande, date de livraison promise, retard constaté, impact concret sur l'atelier ou le chantier (débit bloqué, pose planifiée), demande précise (nouvelle date ferme, livraison partielle, solution de remplacement). Priorise les relances selon l'urgence réelle des affaires impactées.",
+   "skill_category": "generation",
+   "technical_complexity_score": 2,
+   "business_value": "Dans une menuiserie ou un négoce, les retards de quincaillerie, vitrage ou bois technique se découvrent souvent quand l'atelier en a besoin : le chantier glisse et le planning de pose se désorganise. Des relances systématiques, envoyées dès le premier jour de retard prévisionnel avec l'impact chiffré, réduisent les ruptures d'atelier et donnent des éléments tracés en cas de recours.",
+   "implementation_requirements": "Suivi des commandes fournisseurs à jour (dates promises, statuts de livraison), lien entre commandes et affaires pour évaluer l'impact, coordonnées et interlocuteurs fournisseurs, modèles de ton gradué (simple rappel, relance ferme, mise en demeure préparée pour validation).",
+   "limits": "N'a pas connaissance des accords passés oralement avec le commercial fournisseur ni des contreparties en cours de négociation : une relance peut tomber à côté si le suivi des commandes n'est pas à jour. Ne décide pas de changer de fournisseur ni d'accepter un substitut technique. Le ton et le niveau de fermeté restent des choix à ajuster par l'acheteur.",
+   "risks": "Une relance trop agressive ou factuellement fausse (commande en réalité déjà livrée) abîme une relation fournisseur dont l'atelier dépend. Garde-fous : relecture avant envoi systématique, vérification du statut réel de la commande au moment de la génération, escalade (mise en demeure, pénalités) réservée à une décision humaine explicite, historique des relances conservé par commande.",
+   "status": "validated",
+   "processes": [
+    {
+     "process": "PROC_MEN_APPRO",
+     "maillon": "ACT_MENUISERIE",
+     "relevance": 4
+    },
+    {
+     "process": "PROC_NEG_SOURCING",
+     "maillon": "ACT_NEGOCE_BOIS",
+     "relevance": null
+    },
+    {
+     "process": "PROC_CHB_APPRO",
+     "maillon": "ACT_CONSTRUCTION_BOIS",
+     "relevance": null
+    },
+    {
+     "process": "PROC_BEN_APPRO_CONNEXES",
+     "maillon": "ACT_BOIS_ENERGIE",
+     "relevance": null
+    },
+    {
+     "process": "PROC_PAN_APPRO",
+     "maillon": "ACT_INDUSTRIE_PANNEAUX",
+     "relevance": null
+    }
+   ]
+  },
+  {
+   "code": "SKILL_NEG_CLASSER_DEMANDES",
+   "name": "Classer les demandes clients entrantes",
+   "description": "Analyse les demandes entrantes d'un négoce bois et matériaux (email, formulaire web, comptoir retranscrit) et les classe par nature — demande de prix, disponibilité et délai, commande ferme, réclamation, demande de documents (fiche technique, certificat, FDES) — avec un niveau de priorité et une orientation vers le bon vendeur ou l'ADV. Extrait au passage les produits et quantités mentionnés pour préparer la réponse.",
+   "skill_category": "classification",
+   "technical_complexity_score": 2,
+   "business_value": "Le délai de première réponse fait la vente en négoce : un artisan qui attend deux jours pour un prix de bardage a déjà commandé ailleurs. Le tri automatique de la boîte commune ramène la prise en charge à quelques heures, remonte les commandes fermes en tête de file et évite que les réclamations ne s'enlisent.",
+   "implementation_requirements": "Accès aux demandes entrantes (boîte partagée, formulaire), organisation commerciale cible (qui traite quoi : libre-service, gros œuvre, menuiserie), historique de demandes classées pour calibrer les catégories sur le vocabulaire réel des clients artisans et particuliers.",
+   "limits": "Les demandes multi-produits ou mêlant devis et réclamation ne sont classées que sur l'objet dominant, l'objet secondaire étant signalé. Les messages très courts (« vous avez du 45x145 ? ») ne sont exploitables qu'avec le contexte client. Ne vérifie ni le stock ni les prix : elle oriente, elle ne répond pas.",
+   "risks": "Une commande ferme classée en simple demande d'information peut coûter la vente ; une réclamation mal routée dégénère. Garde-fous : seuil de confiance en dessous duquel la demande reste en tri manuel, catégories « commande » et « réclamation » toujours confirmées par un humain avant traitement automatisé en aval, revue régulière des erreurs de classement pour ajuster les règles.",
+   "status": "draft_ai",
+   "processes": [
+    {
+     "process": "PROC_NEG_VENTE",
+     "maillon": "ACT_NEGOCE_BOIS",
+     "relevance": 5
+    }
+   ]
+  },
+  {
+   "code": "SKILL_NEG_CONTROLE_CERTIFICATS",
+   "name": "Contrôler les certificats fournisseurs",
+   "description": "Vérifie les certificats de chaîne de contrôle PEFC/FSC fournis par les fournisseurs d'un négoce bois : présence du numéro de certificat, organisme certificateur, dates de validité, périmètre couvert (catégories de produits), cohérence entre le certificat, les mentions portées sur les factures et BL (référence de certificat, pourcentage ou mention PEFC/FSC) et les produits effectivement achetés. Alerte sur les certificats expirés, suspendus ou hors périmètre.",
+   "skill_category": "compliance",
+   "technical_complexity_score": 3,
+   "business_value": "Un négoce qui revend en certifié sans chaîne de contrôle amont valide s'expose à une non-conformité en audit PEFC/FSC et à la perte de son droit d'usage de la marque — et depuis le RDUE, ses clients exigent des justificatifs à jour. Le contrôle systématique à réception et à chaque renouvellement évite les découvertes en audit et les heures de reconstitution documentaire annuelle.",
+   "implementation_requirements": "Certificats fournisseurs numérisés, base fournisseurs avec les références de certificats attendues, factures et BL accessibles pour le contrôle croisé des mentions, calendrier des dates d'expiration ; accès aux bases publiques PEFC et FSC pour les vérifications en ligne.",
+   "limits": "Se limite aux données présentes sur les documents : elle ne garantit pas qu'un certificat n'a pas été suspendu hier — seule la consultation de la base de l'organisme fait foi. Ne calcule pas les bilans matière de la chaîne de contrôle du négoce lui-même et ne remplace pas le référent certification pour l'interprétation des périmètres produits ambigus.",
+   "risks": "Le risque majeur est le faux sentiment de conformité : un document présent et à jour n'assure pas que la mention portée sur chaque facture est correcte. Garde-fous : croisement périodique avec les bases publiques PEFC/FSC, alerte avant expiration (60 jours), toute anomalie (mention absente sur facture, périmètre discordant) bloque l'usage de l'allégation certifiée jusqu'à validation par le référent, traçabilité des contrôles conservée pour l'audit.",
+   "status": "draft_ai",
+   "processes": [
+    {
+     "process": "PROC_NEG_CONFORMITE",
+     "maillon": "ACT_NEGOCE_BOIS",
+     "relevance": 5
+    },
+    {
+     "process": "PROC_NEG_RECEPTION",
+     "maillon": "ACT_NEGOCE_BOIS",
+     "relevance": 4
+    }
+   ]
+  },
+  {
+   "code": "SKILL_NEG_DESCRIPTION_PRODUIT",
+   "name": "Générer une description produit",
+   "description": "Rédige des descriptions produit prêtes à publier pour le catalogue ou le site d'un négoce bois à partir des fiches techniques : essence, traitement et classe d'emploi (NF EN 335), classement d'aspect ou de structure, dimensions et conditionnement, usages recommandés (bardage, terrasse, ossature), certifications (PEFC/FSC, marquage CE le cas échéant). Adapte le niveau de langage à la cible (artisan ou particulier) tout en restant strictement fidèle aux données techniques.",
+   "skill_category": "generation",
+   "technical_complexity_score": 2,
+   "business_value": "Un catalogue de négoce compte des centaines de références dont les descriptions, recopiées des fournisseurs, sont hétérogènes ou vides : les clients appellent pour des informations basiques et les fiches en ligne ne convertissent pas. La génération automatique met le catalogue à niveau en jours plutôt qu'en mois, avec un vocabulaire homogène et les mentions techniques qui rassurent l'acheteur professionnel.",
+   "implementation_requirements": "Fiches techniques produit normalisées en entrée (la compétence de normalisation des fiches fournisseurs prépare ce travail), charte éditoriale du négoce (ton, longueur, mentions obligatoires), règles sur les allégations (certifications, performances) validées par le responsable.",
+   "limits": "Ne rédige qu'à partir des caractéristiques fournies : elle n'invente ni performance ni usage, et une fiche technique incomplète donne une description incomplète, pas enrichie par supposition. Ne fixe pas les prix et ne gère pas le référencement des variantes (sections, longueurs). Les allégations réglementées (classe d'emploi, marquage CE, certifications) ne doivent jamais être introduites par la rédaction si elles ne figurent pas dans la fiche source.",
+   "risks": "Une description survendant un produit (classe d'emploi supérieure au réel, mention certifiée sans chaîne de contrôle) engage la responsabilité du négoce vis-à-vis du client et des organismes certificateurs. Garde-fous : relecture par le responsable produit avant publication, champs techniques repris tels quels de la fiche source et jamais reformulés en promesse, mention absente → non mentionnée dans la description, échantillon de descriptions contrôlé après chaque lot généré.",
+   "status": "draft_ai",
+   "processes": [
+    {
+     "process": "PROC_NEG_CATALOGUE",
+     "maillon": "ACT_NEGOCE_BOIS",
+     "relevance": 5
+    }
+   ]
+  },
+  {
+   "code": "SKILL_NEG_DETECTION_RUPTURES",
+   "name": "Détecter les ruptures potentielles",
+   "description": "Analyse les mouvements de stock, l'historique des ventes et les délais fournisseurs d'un négoce bois pour signaler les références qui risquent la rupture avant le prochain réapprovisionnement : couverture de stock en jours, saisonnalité (terrasse et bardage au printemps, granulés à l'automne), commandes fournisseurs en cours et leurs délais. Produit une liste priorisée de références à recommander.",
+   "skill_category": "recommendation",
+   "technical_complexity_score": 4,
+   "business_value": "En négoce bois, la rupture sur une référence courante (bastaing 63x175, lambourde classe 4) envoie le client artisan chez le concurrent, souvent durablement. L'anticipation par la couverture de stock réelle et la saisonnalité réduit les ventes perdues et évite les commandes de dépannage en express, plus chères et sans remise de volume.",
+   "implementation_requirements": "Historique de stock et de ventes structuré sur au moins un an pour capter la saisonnalité, délais de réapprovisionnement par fournisseur à jour, données de stock fiables (les écarts d'inventaire faussent tout), commandes fournisseurs en cours accessibles.",
+   "limits": "Se fonde sur l'historique : elle ne voit ni un gros chantier à venir non saisi, ni une tension de marché nouvelle (flambée, pénurie fournisseur), ni les effets d'une promotion planifiée. Les références à rotation très faible ou récentes n'ont pas assez d'historique pour une prévision fiable et ressortent en « données insuffisantes ». Ne passe pas les commandes : elle recommande.",
+   "risks": "Suivre aveuglément les recommandations peut sur-stocker des références en fin de vie ou immobiliser de la trésorerie ; à l'inverse, une confiance excessive dans un stock théorique faux laisse passer de vraies ruptures. Garde-fous : validation des propositions de commande par l'acheteur, confrontation périodique du stock théorique aux inventaires tournants, signalement explicite des références à faible historique, seuils de couverture ajustables par famille de produits.",
+   "status": "draft_ai",
+   "processes": [
+    {
+     "process": "PROC_NEG_STOCK",
+     "maillon": "ACT_NEGOCE_BOIS",
+     "relevance": 5
+    },
+    {
+     "process": "PROC_NEG_SOURCING",
+     "maillon": "ACT_NEGOCE_BOIS",
+     "relevance": 4
+    }
+   ]
+  },
+  {
+   "code": "SKILL_NEG_NORMALISER_FICHE",
+   "name": "Normaliser une fiche produit fournisseur",
+   "description": "Convertit les fiches produit reçues des fournisseurs (PDF, tableurs, extraits de tarifs, formats tous différents) dans le format catalogue homogène du négoce : référence, désignation normalisée, essence, dimensions décomposées (section, longueur), traitement et classe d'emploi, conditionnement (botte, palette, colis), certificats. Prépare l'intégration au catalogue et à l'ERP sans ressaisie.",
+   "skill_category": "document_extraction",
+   "technical_complexity_score": 2,
+   "business_value": "Chaque mise à jour de tarif fournisseur déclenche des heures de ressaisie et son lot d'erreurs (confusion 45x145 / 45x120, conditionnement mal converti) qui se retrouvent dans les prix de vente. La normalisation automatique traite un tarif complet en minutes et harmonise des libellés fournisseurs hétérogènes vers le vocabulaire unique du catalogue.",
+   "implementation_requirements": "Fiches et tarifs fournisseurs numériques, référentiel catalogue cible (nomenclature des familles, unités, règles de nommage), table de correspondance des libellés fournisseurs récurrents (abréviations d'essences, traitements), format d'import de l'ERP ou du site.",
+   "limits": "Les tarifs scannés de mauvaise qualité ou les fiches en image donnent une extraction partielle. Ne tranche pas les ambiguïtés de correspondance (deux références internes candidates pour un même produit fournisseur) : elle les met en file d'arbitrage. Ne convertit pas les prix (unité fournisseur vs unité de vente) sans règle explicite validée — c'est la première source d'erreur coûteuse.",
+   "risks": "Une dimension ou une unité mal normalisée se propage au stock, aux prix et aux commandes clients ; une erreur systématique sur un tarif entier multiplie le dégât. Garde-fous : contrôle par échantillonnage à chaque import, champs douteux ou illisibles → nul + signalement plutôt que valeur devinée, rapprochement automatique avec l'ancienne version de la fiche pour détecter les variations anormales, validation humaine avant intégration au catalogue.",
+   "status": "draft_ai",
+   "processes": [
+    {
+     "process": "PROC_NEG_CATALOGUE",
+     "maillon": "ACT_NEGOCE_BOIS",
+     "relevance": 5
+    }
+   ]
+  },
+  {
+   "code": "SKILL_NEG_REPONSE_COMMERCIALE",
+   "name": "Préparer une réponse commerciale",
+   "description": "Prépare une trame de réponse à une demande client de négoce à partir du catalogue et de l'historique client : produits correspondant à la demande (avec alternatives en stock si la référence demandée manque), quantités et conditionnements, informations techniques utiles (classe d'emploi, certificats), rappel des conditions habituelles du client. Le vendeur complète les prix et personnalise avant envoi.",
+   "skill_category": "generation",
+   "technical_complexity_score": 3,
+   "business_value": "Répondre vite et complet fait la différence en négoce : une réponse qui propose d'emblée l'alternative disponible évite un aller-retour et sauve la vente. La trame automatique ramène la préparation d'une réponse de vingt minutes à cinq, en particulier pour les demandes multi-produits, et homogénéise la qualité des réponses entre vendeurs.",
+   "implementation_requirements": "Catalogue produit à jour et interrogeable (désignations, stocks, fiches techniques), historique client accessible (commandes passées, conditions), modèles de réponse de l'entreprise, boîte email ou CRM connectés pour récupérer la demande et déposer le brouillon.",
+   "limits": "Ne fixe pas les prix ni les remises : ces champs restent vides ou repris des conditions enregistrées, à valider par le vendeur. La pertinence des alternatives dépend de la qualité des données catalogue (un stock faux propose un produit indisponible). Ne gère pas les négociations complexes ni les demandes nécessitant un conseil technique engageant (dimensionnement de structure, par exemple, qui relève d'un bureau d'études).",
+   "risks": "Un brouillon envoyé sans relecture peut annoncer un stock inexistant, un délai intenable ou un conseil technique inapproprié qui engage le négoce. Garde-fous : relecture et validation par le vendeur obligatoires avant envoi, disponibilités re-vérifiées au moment de l'envoi, mentions techniques limitées aux données des fiches produit, aucune remise appliquée automatiquement.",
+   "status": "draft_ai",
+   "processes": [
+    {
+     "process": "PROC_NEG_VENTE",
+     "maillon": "ACT_NEGOCE_BOIS",
+     "relevance": 5
+    }
+   ]
+  },
+  {
+   "code": "SKILL_NEG_REPORTING_VENTES",
+   "name": "Créer un reporting ventes par famille produit",
+   "description": "Génère une synthèse périodique des ventes d'un négoce bois par famille de produits (sciages, panneaux, bois traité, aménagement extérieur...) : chiffre d'affaires et volumes par famille, comparaison avec la période précédente et l'année passée à la même saison, marges quand elles sont disponibles, références en croissance ou en décrochage, faits marquants à vérifier. Sort un document lisible pour la réunion commerciale.",
+   "skill_category": "reporting",
+   "technical_complexity_score": 3,
+   "business_value": "Dans beaucoup de négoces, le reporting se limite au chiffre d'affaires global de fin de mois : un décrochage sur une famille (bardage, panneaux) se voit avec des semaines de retard. La synthèse automatique par famille, prête chaque lundi, permet de réagir sur les stocks et l'action commerciale pendant que la saison le permet encore.",
+   "implementation_requirements": "Données de vente extraites de l'outil de gestion (lignes de facture avec produit, quantité, montant, date), nomenclature des familles produit stable et complète (les produits non affectés faussent les totaux), historique d'au moins un an pour les comparaisons saisonnières.",
+   "limits": "Restitue et compare, mais n'explique pas : un décrochage peut venir d'une rupture, d'un concurrent ou de la météo — l'analyse causale reste humaine. Les marges ne sont fiables que si les prix d'achat sont à jour dans l'outil. Les avoirs, ristournes de fin d'année et ventes internes doivent être traités explicitement, sinon ils biaisent les comparaisons.",
+   "risks": "Un chiffre faux en réunion commerciale entraîne de mauvaises décisions d'achat ou d'objectifs ; l'erreur silencieuse (famille mal affectée, période mal bornée) est la plus dangereuse. Garde-fous : total du reporting rapproché automatiquement du chiffre d'affaires comptable de la période, produits sans famille listés à part et non fondus dans un « divers », chaque synthèse datée avec sa source de données, relecture par le responsable commercial avant diffusion.",
+   "status": "draft_ai",
+   "processes": [
+    {
+     "process": "PROC_NEG_STOCK",
+     "maillon": "ACT_NEGOCE_BOIS",
+     "relevance": 5
+    }
+   ]
+  },
+  {
+   "code": "SKILL_ORDO_PRODUCTION",
+   "name": "Aider à l'ordonnancement de production",
+   "description": "Propose un ordonnancement des ordres de fabrication d'un atelier bois (usinage, assemblage, finition, rabotage, pressage) à partir des délais clients, des charges et capacités machines et des priorités commerciales : séquence proposée par poste, regroupements pertinents (mêmes réglages, même essence ou finition pour limiter les changements de série), alertes sur les délais intenables et les goulots.",
+   "skill_category": "planning",
+   "technical_complexity_score": 4,
+   "business_value": "Dans un atelier de 10 à 30 personnes, l'ordonnancement se fait souvent de tête ou sur tableau blanc : les changements de série non regroupés et les urgences insérées au dernier moment coûtent des heures de production. Une proposition argumentée chaque matin réduit les temps de changement, objective les arbitrages entre commandes et rend les promesses de délai plus fiables.",
+   "implementation_requirements": "Ordres de fabrication saisis avec leurs opérations, gammes et temps standards par poste, capacités et calendrier de l'atelier (équipes, maintenance planifiée), délais clients à jour ; un retour quotidien sur l'avancement réel (pointage ou déclaration de production) pour recaler la proposition.",
+   "limits": "Purement indicatif : il ignore les aléas non saisis (panne machine, absence, non-conformité matière découverte au débit) et les savoir-faire implicites (telle machine tient mal telle section). La qualité de la proposition dépend directement des temps standards : des gammes approximatives donnent un planning approximatif. Ne gère pas la planification à capacité finie multi-sites.",
+   "risks": "Un ordonnancement suivi aveuglément peut désorganiser l'atelier (série lancée sans matière disponible, urgence réelle déclassée par la règle de calcul). Garde-fous : validation quotidienne par le responsable production qui garde la main sur la séquence finale, vérification de la disponibilité matière avant toute mise en tête de file, écarts entre planning proposé et réalisé revus chaque semaine pour recaler les temps standards.",
+   "status": "validated",
+   "processes": [
+    {
+     "process": "PROC_MEN_FINITION",
+     "maillon": "ACT_MENUISERIE",
+     "relevance": null
+    },
+    {
+     "process": "PROC_MEN_USINAGE",
+     "maillon": "ACT_MENUISERIE",
+     "relevance": null
+    },
+    {
+     "process": "PROC_MEN_ASSEMBLAGE",
+     "maillon": "ACT_MENUISERIE",
+     "relevance": null
+    },
+    {
+     "process": "PROC_SCI_RABOTAGE",
+     "maillon": "ACT_SCIERIE",
+     "relevance": null
+    },
+    {
+     "process": "PROC_EXF_MARTELAGE",
+     "maillon": "ACT_EXPLOITANT_FORESTIER",
+     "relevance": null
+    },
+    {
+     "process": "PROC_EXF_ABATTAGE",
+     "maillon": "ACT_EXPLOITANT_FORESTIER",
+     "relevance": null
+    },
+    {
+     "process": "PROC_TRA_MAINTENANCE",
+     "maillon": "ACT_TRANSPORTEUR_BOIS",
+     "relevance": null
+    },
+    {
+     "process": "PROC_CHB_FABRICATION",
+     "maillon": "ACT_CONSTRUCTION_BOIS",
+     "relevance": null
+    },
+    {
+     "process": "PROC_BEN_BROYAGE",
+     "maillon": "ACT_BOIS_ENERGIE",
+     "relevance": null
+    },
+    {
+     "process": "PROC_BEN_SECHAGE",
+     "maillon": "ACT_BOIS_ENERGIE",
+     "relevance": null
+    },
+    {
+     "process": "PROC_BEN_GRANULATION",
+     "maillon": "ACT_BOIS_ENERGIE",
+     "relevance": null
+    },
+    {
+     "process": "PROC_BEN_CONDITIONNEMENT",
+     "maillon": "ACT_BOIS_ENERGIE",
+     "relevance": null
+    },
+    {
+     "process": "PROC_PAN_PREPA",
+     "maillon": "ACT_INDUSTRIE_PANNEAUX",
+     "relevance": null
+    },
+    {
+     "process": "PROC_PAN_SECHAGE",
+     "maillon": "ACT_INDUSTRIE_PANNEAUX",
+     "relevance": null
+    },
+    {
+     "process": "PROC_PAN_ENCOLLAGE",
+     "maillon": "ACT_INDUSTRIE_PANNEAUX",
+     "relevance": null
+    },
+    {
+     "process": "PROC_PAN_PRESSAGE",
+     "maillon": "ACT_INDUSTRIE_PANNEAUX",
+     "relevance": null
+    },
+    {
+     "process": "PROC_PAN_FINITION",
+     "maillon": "ACT_INDUSTRIE_PANNEAUX",
+     "relevance": null
+    }
+   ]
+  },
+  {
+   "code": "SKILL_RAPPORT_TRACA",
+   "name": "Préparer un rapport de traçabilité",
+   "description": "Assemble un rapport de traçabilité par lot ou par expédition à partir du registre des lots et des documents rattachés : origine (parcelle géolocalisée, fournisseur), essences, volumes, chaîne de garde (BL d'entrée, transformations, BL de sortie), certificats PEFC/FSC mobilisés et référence de la DDS RDUE. Produit le dossier attendu par un client soumis au règlement déforestation ou par un auditeur de chaîne de contrôle.",
+   "skill_category": "reporting",
+   "technical_complexity_score": 3,
+   "business_value": "Reconstituer manuellement la traçabilité d'une expédition (retrouver le BL d'entrée, le certificat en vigueur à la date, la parcelle d'origine) prend des heures par demande — et les demandes se multiplient depuis le RDUE. Le rapport généré en quelques minutes transforme une corvée dissuasive en réponse standard, et révèle immédiatement les maillons manquants.",
+   "implementation_requirements": "Registre des lots avec liens amont/aval maintenus (lot d'entrée → produits sortis), documents numérisés et rattachés aux lots (BL, certificats, DDS), données d'origine parcellaire pour les bois soumis au RDUE ; la qualité du rapport dépend entièrement de la tenue de ce registre.",
+   "limits": "Restitue les données disponibles : il ne comble pas un maillon de traçabilité manquant et ne reconstruit pas un lien lot d'entrée / produit fini qui n'a pas été enregistré à la transformation. Ne soumet pas la DDS et ne calcule pas les bilans matière de chaîne de contrôle. Un rapport complet en apparence peut masquer une donnée source fausse (parcelle mal saisie).",
+   "risks": "Un rapport présenté comme conforme alors qu'il est incomplet expose juridiquement l'entreprise vis-à-vis du RDUE et de ses clients ; c'est pire qu'une absence de rapport. Garde-fous : les maillons manquants sont listés en tête de rapport et rendent impossible une mention « complet », validation par le référent conformité avant toute transmission externe, documents source joints ou référencés pour permettre le contrôle, rapports archivés avec date et périmètre.",
+   "status": "validated",
+   "processes": [
+    {
+     "process": "PROC_SCI_CERTIFICATS",
+     "maillon": "ACT_SCIERIE",
+     "relevance": 4
+    },
+    {
+     "process": "PROC_SCI_EXPEDITION",
+     "maillon": "ACT_SCIERIE",
+     "relevance": null
+    },
+    {
+     "process": "PROC_SCI_TRAITEMENT",
+     "maillon": "ACT_SCIERIE",
+     "relevance": null
+    },
+    {
+     "process": "PROC_EXF_TRACA_RDUE",
+     "maillon": "ACT_EXPLOITANT_FORESTIER",
+     "relevance": null
+    },
+    {
+     "process": "PROC_EXF_SECURITE",
+     "maillon": "ACT_EXPLOITANT_FORESTIER",
+     "relevance": null
+    },
+    {
+     "process": "PROC_NEG_CONFORMITE",
+     "maillon": "ACT_NEGOCE_BOIS",
+     "relevance": null
+    },
+    {
+     "process": "PROC_TRA_CONFORMITE",
+     "maillon": "ACT_TRANSPORTEUR_BOIS",
+     "relevance": null
+    }
+   ]
+  },
+  {
+   "code": "SKILL_SCI_PLAN_SCIAGE",
+   "name": "Optimiser le plan de débit",
+   "description": "Propose un plan de débit (schéma de coupe) à partir des caractéristiques des grumes du parc (diamètres, longueurs, qualités, essence) et du carnet de commandes : affectation des grumes aux produits (plots, avivés, charpente), séquence de coupe indicative et rendement matière attendu, en respectant les contraintes machine saisies (ouverture de scie de tête, sections possibles).",
+   "skill_category": "planning",
+   "technical_complexity_score": 4,
+   "business_value": "Le rendement matière fait la rentabilité d'une scierie : un point de rendement gagné sur une ligne représente des dizaines de milliers d'euros par an pour une PME. L'aide au plan de débit objective l'affectation grumes / commandes, notamment quand le scieur expérimenté est absent, et évite de scier en produits standards des grumes qui auraient servi une commande mieux valorisée.",
+   "implementation_requirements": "Cubage et classement des grumes disponibles (idéalement issus du scanner ou du cubage à réception), carnet de commandes avec sections, longueurs et qualités attendues, contraintes machines saisies (ouvertures, épaisseurs de trait de scie), prix de valorisation par produit pour arbitrer.",
+   "limits": "Recommandation indicative : elle ne voit pas l'intérieur de la grume (nœuds cachés, cœur excentré, gélivure) et ne remplace ni l'optimiseur temps réel de la ligne de sciage ni l'œil du scieur qui ajuste à la découpe. La qualité du plan dépend de la fiabilité du classement des grumes en entrée. Ne gère pas l'ordonnancement fin de la journée de sciage.",
+   "risks": "Un schéma inadapté à la qualité réelle des grumes dégrade le rendement au lieu de l'améliorer, et une confiance excessive peut faire scier une grume de qualité tranche en charpente. Garde-fous : validation du plan par le responsable de production avant lancement, comparaison hebdomadaire rendement prévu / rendement réel pour recaler le modèle, liberté explicite laissée au scieur de déroger avec signalement du motif.",
+   "status": "validated",
+   "processes": [
+    {
+     "process": "PROC_SCI_PLANIF_SCIAGE",
+     "maillon": "ACT_SCIERIE",
+     "relevance": null
+    },
+    {
+     "process": "PROC_SCI_SCIAGE",
+     "maillon": "ACT_SCIERIE",
+     "relevance": null
+    }
+   ]
+  },
+  {
+   "code": "SKILL_SCI_SECHAGE",
+   "name": "Recommander un programme de séchage",
+   "description": "Suggère un programme de séchage artificiel (paliers température / hygrométrie, durée estimée, phase d'équilibrage) selon l'essence, l'épaisseur des débits, l'humidité initiale mesurée et l'humidité cible (par exemple 18 % pour de la charpente, 8-12 % pour de la menuiserie intérieure), en tenant compte du type de séchoir. Explique les points de vigilance du programme proposé (essences nerveuses, risque de cémentation, fentes en bout).",
+   "skill_category": "recommendation",
+   "technical_complexity_score": 3,
+   "business_value": "Un lot mal séché, c'est des semaines de production dévalorisées : fentes, déformations, humidité hétérogène refusée par le client au contrôle à l'humidimètre. La recommandation aide les scieries qui n'ont pas de spécialiste séchage à fiabiliser leurs programmes, à raccourcir les cycles trop prudents et à documenter les choix pour la répétabilité.",
+   "implementation_requirements": "Essence, épaisseur, humidité initiale mesurée (plusieurs points de mesure dans la pile), humidité cible, type et capacités du séchoir (cellule à air chaud climatisé, pompe à chaleur) ; l'historique des cycles passés de l'entreprise améliore nettement la pertinence.",
+   "limits": "Recommandation générique à adapter : chaque séchoir a son comportement propre (circulation d'air, sondes) et le programme théorique ne remplace pas les mesures en cours de cycle. Les essences difficiles (chêne épais, hêtre) et les lots hétérogènes (épaisseurs ou humidités mélangées) exigent l'arbitrage du responsable séchage. Ne pilote pas le séchoir et ne détecte pas une dérive en cours de cycle.",
+   "risks": "Un programme inadapté abîme un lot entier de façon irréversible : fentes, collapse, cémentation, humidité à cœur non atteinte découverte chez le client. Garde-fous : validation du programme par le responsable séchage avant lancement, contrôles d'humidité en cours de cycle et à cœur en fin de cycle (humidimètre ou pesées d'éprouvettes), premier lot d'une essence ou épaisseur nouvelle traité en programme prudent, journal des cycles conservé pour capitalisation.",
+   "status": "validated",
+   "processes": [
+    {
+     "process": "PROC_SCI_SECHAGE",
+     "maillon": "ACT_SCIERIE",
+     "relevance": null
+    }
+   ]
+  },
+  {
+   "code": "SKILL_SYNTHESE_STOCK",
+   "name": "Générer une synthèse de stock",
+   "description": "Produit une synthèse lisible de l'état du stock de produits finis d'une scierie ou d'un négoce à partir de l'export d'inventaire : volumes par essence, section et qualité, produits dormants (sans mouvement depuis un seuil paramétrable), ruptures et stocks faibles au regard des rotations, valorisation si les prix sont disponibles. Format adapté à la réunion hebdomadaire ou à l'envoi au commercial.",
+   "skill_category": "summarization",
+   "technical_complexity_score": 2,
+   "business_value": "Le stock de produits finis d'une scierie immobilise une trésorerie importante et se pilote souvent de mémoire : des paquets d'avivés dorment des mois sous hangar pendant que le commercial vend ce qui manque. La synthèse hebdomadaire rend visibles les dormants à déstocker et les ruptures à produire, sans passer une demi-journée dans les extractions.",
+   "implementation_requirements": "Export du stock (CSV ou extraction ERP) avec essence, section, qualité, quantités et dates de dernier mouvement, seuils de l'entreprise (durée avant qu'un produit soit considéré dormant, couvertures minimales par famille), historique des sorties pour les alertes de rupture.",
+   "limits": "Reflète la qualité des données saisies : un stock mal tenu (paquets non déclarés, doubles saisies, inventaire ancien) donne une synthèse trompeuse — la compétence ne compte pas les paquets sous le hangar. Ne recommande pas de prix de déstockage et ne connaît pas les réservations commerciales non saisies. La valorisation dépend de prix de revient à jour.",
+   "risks": "Des décisions d'achat, de production ou de promotion fondées sur un stock obsolète coûtent cher ; le danger est la confiance dans un chiffre non daté. Garde-fous : chaque synthèse affiche la date et la source de l'extraction, les écarts inhabituels (variation brutale d'une famille) sont signalés comme suspects avant d'être interprétés, rapprochement périodique avec un inventaire physique tournant, anomalies listées à part plutôt que corrigées silencieusement.",
+   "status": "validated",
+   "processes": [
+    {
+     "process": "PROC_SCI_STOCK_PF",
+     "maillon": "ACT_SCIERIE",
+     "relevance": 4
+    },
+    {
+     "process": "PROC_SCI_CONNEXES",
+     "maillon": "ACT_SCIERIE",
+     "relevance": null
+    },
+    {
+     "process": "PROC_SCI_RABOTAGE",
+     "maillon": "ACT_SCIERIE",
+     "relevance": null
+    },
+    {
+     "process": "PROC_SCI_STOCKAGE_PARC",
+     "maillon": "ACT_SCIERIE",
+     "relevance": null
+    },
+    {
+     "process": "PROC_EXF_PREPA_CHANTIER",
+     "maillon": "ACT_EXPLOITANT_FORESTIER",
+     "relevance": null
+    },
+    {
+     "process": "PROC_NEG_CATALOGUE",
+     "maillon": "ACT_NEGOCE_BOIS",
+     "relevance": null
+    }
+   ]
+  },
+  {
+   "code": "SKILL_TOURNEE_LIVRAISON",
+   "name": "Planifier une tournée de livraison",
+   "description": "Propose un ordre de tournée et un regroupement des livraisons de produits bois (sciages, menuiseries, panneaux) selon les adresses, les créneaux convenus avec les clients, la capacité et le type de véhicule (plateau avec grue, semi, porteur) et les contraintes d'accès chantier (centre-ville, hauteur limitée, déchargement à la grue). Établit une feuille de tournée avec horaires estimés par point.",
+   "skill_category": "planning",
+   "technical_complexity_score": 3,
+   "business_value": "Des tournées organisées à l'intuition, ce sont des kilomètres à vide, des créneaux manqués et des poseurs qui attendent leur menuiserie sur chantier. Une planification assistée réduit les kilomètres parcourus de l'ordre de 10 à 20 % sur des tournées multi-points et fiabilise les créneaux annoncés, ce qui compte double quand le déchargement mobilise une grue et deux personnes côté client.",
+   "implementation_requirements": "Liste des livraisons avec adresses exactes et créneaux, poids et encombrement des colis (une menuiserie ne se gerbe pas comme des bottes de bastaings), caractéristiques des véhicules disponibles, contraintes d'accès connues par client ou chantier saisies au fil de l'eau.",
+   "limits": "Optimisation indicative : elle ne gère ni le trafic en temps réel, ni un déchargement qui s'éternise, ni les restrictions locales non saisies (marché le mardi matin, pont limité en tonnage). L'ordre de chargement du camion (dernier livré chargé en premier) est suggéré mais doit être vérifié par le chauffeur qui connaît son plateau. Ne remplace pas un TMS pour une flotte importante.",
+   "risks": "Un créneau non tenu chez un client professionnel désorganise son chantier et abîme la relation ; une tournée irréaliste met le chauffeur en pression et en dépassement de temps de conduite. Garde-fous : validation de la tournée par le responsable logistique et le chauffeur avant départ, marges de sécurité paramétrées entre les points, contraintes d'accès nouvelles remontées par les chauffeurs et capitalisées, temps de conduite réglementaires respectés dans la proposition.",
+   "status": "validated",
+   "processes": [
+    {
+     "process": "PROC_MEN_LIVRAISON",
+     "maillon": "ACT_MENUISERIE",
+     "relevance": null
+    },
+    {
+     "process": "PROC_EXF_DEBARDAGE",
+     "maillon": "ACT_EXPLOITANT_FORESTIER",
+     "relevance": null
+    },
+    {
+     "process": "PROC_NEG_STOCK",
+     "maillon": "ACT_NEGOCE_BOIS",
+     "relevance": null
+    },
+    {
+     "process": "PROC_NEG_EXPEDITION",
+     "maillon": "ACT_NEGOCE_BOIS",
+     "relevance": null
+    },
+    {
+     "process": "PROC_TRA_PLANIF",
+     "maillon": "ACT_TRANSPORTEUR_BOIS",
+     "relevance": null
+    },
+    {
+     "process": "PROC_TRA_CHARGEMENT",
+     "maillon": "ACT_TRANSPORTEUR_BOIS",
+     "relevance": null
+    },
+    {
+     "process": "PROC_TRA_TRANSPORT",
+     "maillon": "ACT_TRANSPORTEUR_BOIS",
+     "relevance": null
+    },
+    {
+     "process": "PROC_CHB_LOGISTIQUE",
+     "maillon": "ACT_CONSTRUCTION_BOIS",
+     "relevance": null
+    },
+    {
+     "process": "PROC_BEN_LOGISTIQUE",
+     "maillon": "ACT_BOIS_ENERGIE",
+     "relevance": null
+    },
+    {
+     "process": "PROC_PAN_EXPEDITION",
+     "maillon": "ACT_INDUSTRIE_PANNEAUX",
+     "relevance": null
+    }
+   ]
+  },
+  {
+   "code": "SKILL_TRA_CLASSER_BONS",
+   "name": "Classer les bons de transport",
+   "description": "Classe et indexe automatiquement les documents de transport d'un transporteur de bois — lettres de voiture, bons de livraison émargés, tickets de pesée, bons de chargement — par client, date, tournée et chantier ou lieu de chargement. Nomme les fichiers selon la convention de l'entreprise et les range dans l'arborescence ou la GED, prêts à être retrouvés pour la facturation ou en cas de litige.",
+   "skill_category": "classification",
+   "technical_complexity_score": 2,
+   "business_value": "Les documents remontent des cabines froissés, photographiés ou en vrac en fin de semaine : retrouver la lettre de voiture d'un chargement contesté peut prendre une heure, et un BL émargé égaré retarde la facturation du voyage. Le classement automatique au fil de l'eau supprime le tri manuel du vendredi et sécurise les pièces justificatives des voyages facturés.",
+   "implementation_requirements": "Documents numérisés ou photographiés (une photo nette du document à plat suffit), convention de nommage et arborescence cibles, référentiel des clients et chantiers pour rattacher les documents, OCR adapté aux documents dégradés.",
+   "limits": "Les photos floues, les documents carbone pâles ou les mentions manuscrites (numéro de tournée griffonné) peuvent être mal lus : les documents non rattachables avec certitude partent en file « à classer manuellement », pas dans un dossier au hasard. Ne vérifie pas la cohérence métier du document (volumes, signatures) : il classe, il ne contrôle pas.",
+   "risks": "Un document mal classé est pire qu'un document non classé : on croit à tort le dossier complet, et la pièce manque au moment du litige ou du contrôle. Garde-fous : seuil de confiance en dessous duquel le rattachement est soumis à validation, original conservé tel quel en plus de la copie renommée, contrôle périodique par échantillonnage des classements automatiques, liste des documents en attente visible et traitée chaque semaine.",
+   "status": "draft_ai",
+   "processes": [
+    {
+     "process": "PROC_TRA_DOCUMENTAIRE",
+     "maillon": "ACT_TRANSPORTEUR_BOIS",
+     "relevance": 5
+    }
+   ]
+  },
+  {
+   "code": "SKILL_TRA_COHERENCE_CHARGEMENT",
+   "name": "Contrôler la cohérence entre chargement et livraison",
+   "description": "Compare pour chaque voyage les éléments constatés au chargement (volume cubé ou poids au pont-bascule, nature des bois, nombre de billons ou de paquets, références de lot) avec ceux constatés à la livraison (pesée d'arrivée, réception usine, BL émargé) et signale les écarts au-delà des tolérances : manquant, écart de pesée anormal, lot livré au mauvais destinataire.",
+   "skill_category": "control",
+   "technical_complexity_score": 3,
+   "business_value": "Les écarts chargement / livraison (pesées divergentes, billons manquants) sont la matière première des litiges entre exploitants, transporteurs et usines — et sans détection rapide, la retenue tombe sur le transporteur des semaines plus tard, quand plus rien n'est vérifiable. Le contrôle systématique au retour du voyage permet de documenter l'écart le jour même et de préserver la facturation.",
+   "implementation_requirements": "Données de chargement et de livraison accessibles par voyage (tickets de pesée départ et arrivée, bons de chargement, réceptions usine), tolérances métier paramétrées (écart de pesée admissible selon l'humidité des bois et la précision des ponts-bascule), rattachement fiable des documents au bon voyage.",
+   "limits": "Compare des données déclarées : si le chargement n'a été ni pesé ni cubé précisément (estimation au grappin), l'écart mesuré n'a pas de sens et le contrôle le signale. Les écarts normaux liés au ressuyage des bois ou aux différences d'étalonnage entre ponts-bascule ne sont pas distinguables d'une perte réelle sans tolérances bien réglées. Ne détermine pas la responsabilité de l'écart.",
+   "risks": "Trop d'alertes non pertinentes (tolérances trop serrées) fait ignorer les vraies anomalies ; un écart réel non traité finit en retenue sur facture non contestée. Garde-fous : tolérances validées avec les donneurs d'ordre et revues périodiquement, chaque alerte statuée et tracée (expliquée, contestée, admise), documents source archivés avec le voyage pour étayer une contestation, bilan mensuel des écarts par client pour objectiver les discussions.",
+   "status": "draft_ai",
+   "processes": [
+    {
+     "process": "PROC_TRA_CHARGEMENT",
+     "maillon": "ACT_TRANSPORTEUR_BOIS",
+     "relevance": 5
+    },
+    {
+     "process": "PROC_TRA_TRANSPORT",
+     "maillon": "ACT_TRANSPORTEUR_BOIS",
+     "relevance": 4
+    }
+   ]
+  },
+  {
+   "code": "SKILL_TRA_LIRE_ORDRE",
+   "name": "Lire un ordre de transport",
+   "description": "Extrait les informations clés d'un ordre de transport bois reçu par mail ou PDF, quel que soit le format du donneur d'ordre (exploitant, scierie, coopérative) : expéditeur et destinataire, lieux de chargement et de livraison (y compris descriptions de places de dépôt forestières), nature des bois, volume ou poids, date souhaitée. Alimente directement le planning des tournées sans ressaisie.",
+   "skill_category": "document_extraction",
+   "technical_complexity_score": 2,
+   "business_value": "Un exploitant de transport reçoit ses ordres dans tous les formats — mail de trois lignes, PDF structuré, SMS retranscrit — et la ressaisie au planning produit des erreurs d'adresse ou de date qui coûtent des voyages à vide. L'extraction automatique fait gagner plusieurs minutes par ordre et fiabilise le planning, surtout en pleine saison quand les ordres s'accumulent.",
+   "implementation_requirements": "Accès aux ordres entrants (boîte mail dédiée, PDF), référentiel des clients et des lieux habituels pour normaliser les libellés (« dépôt de la scierie X » → adresse exacte), planning ou TMS capable de recevoir les données extraites.",
+   "limits": "Les lieux de chargement forestiers décrits de façon vague (« bord de route D34 après le hameau ») ne peuvent pas être géocodés précisément et sont signalés pour clarification. Ne vérifie ni la faisabilité (tonnage autorisé sur l'itinéraire, accessibilité) ni la disponibilité des camions. Un ordre modifié par un second mail n'est pas rapproché automatiquement du premier sans référence commune.",
+   "risks": "Une adresse ou une date mal extraite envoie un camion au mauvais endroit ou au mauvais jour : le coût d'un voyage à vide dépasse largement le temps de vérification. Garde-fous : validation de chaque ordre extrait par l'exploitant avant intégration au planning, champs douteux ou absents → nul + signalement, jamais de valeur devinée, confirmation renvoyée au donneur d'ordre reprenant les données comprises pour verrouiller les ambiguïtés.",
+   "status": "draft_ai",
+   "processes": [
+    {
+     "process": "PROC_TRA_PLANIF",
+     "maillon": "ACT_TRANSPORTEUR_BOIS",
+     "relevance": 5
+    }
+   ]
+  },
+  {
+   "code": "SKILL_TRA_OPTIM_TOURNEE",
+   "name": "Optimiser une tournée simple",
+   "description": "Propose un ordre de passage optimisé pour une tournée de livraisons ou d'enlèvements de bois à partir des adresses, des fenêtres horaires (horaires de réception des usines, créneaux chantier) et du point de départ du camion. Estime les horaires de passage et le kilométrage total, et signale les combinaisons intenables (deux fenêtres horaires incompatibles le même matin).",
+   "skill_category": "planning",
+   "technical_complexity_score": 3,
+   "business_value": "Sur une tournée de 4 à 8 points, l'ordre de passage improvisé coûte facilement 30 à 60 km et une fenêtre horaire manquée — soit une attente devant une usine fermée jusqu'à la reprise. L'optimisation systématique réduit le kilométrage et donne à l'exploitant un argument objectif quand un client demande un créneau qui casserait la tournée.",
+   "implementation_requirements": "Liste des points avec adresses exploitables et fenêtres horaires, temps de service estimé par point (un déchargement de grumes à la grue n'a rien d'un dépôt de colis), point de départ et de retour du véhicule, distances routières réalistes pour poids lourds (pas les itinéraires voiture).",
+   "limits": "Optimisation indicative sur des temps de parcours théoriques : elle ne gère pas le trafic en temps réel, les barrières de dégel, les restrictions de tonnage locales ni un déchargement qui déborde. Sur les dessertes forestières, les temps réels dépendent de l'état des pistes que l'outil ne connaît pas. Ne réaffecte pas les livraisons entre plusieurs camions : elle ordonne une tournée donnée.",
+   "risks": "Une tournée théoriquement optimale mais irréaliste (temps de service sous-estimés, itinéraire interdit aux 44 t) met le chauffeur en difficulté et fait manquer les créneaux qu'elle devait sécuriser. Garde-fous : validation par l'exploitant et le chauffeur qui connaissent le terrain, marges de sécurité sur les temps de service, respect des temps de conduite et de pause intégré à la proposition, retours chauffeur capitalisés pour corriger les temps de référence.",
+   "status": "draft_ai",
+   "processes": [
+    {
+     "process": "PROC_TRA_PLANIF",
+     "maillon": "ACT_TRANSPORTEUR_BOIS",
+     "relevance": 5
+    }
+   ]
+  },
+  {
+   "code": "SKILL_TRA_PREPARER_FACTURATION",
+   "name": "Préparer la facturation transport",
+   "description": "Rassemble et structure les éléments de facturation d'une tournée réalisée (distance parcourue, tonnage ou volume transporté, prestations annexes comme l'attente au chargement, la manutention à la grue ou les allers à vide) à partir des ordres de transport, des bons émargés et des données de pesée ou de cubage. Produit un pré-relevé de facturation prêt à contrôler avant émission.",
+   "skill_category": "reporting",
+   "technical_complexity_score": 3,
+   "business_value": "Un transporteur perd des prestations facturables faute de les avoir tracées : temps d'attente sur parc, tonne-kilomètre mal reconstitué, ajustement gazole oublié. Regrouper automatiquement les éléments d'une tournée réduit ces oublis, raccourcit le délai entre livraison et facture, et donne une base chiffrée pour justifier une prestation contestée par le client.",
+   "implementation_requirements": "Accès aux données de tournées (ordres de transport, kilométrage, horaires de chargement et livraison), aux relevés de pesée ou de cubage, et à la grille tarifaire de l'entreprise (tarif au tonne-kilomètre ou forfait, prestations annexes, indexation gazole type indice CNR). Idéalement alimenté depuis l'informatique embarquée et le logiciel d'exploitation.",
+   "limits": "Ne fixe pas les prix : elle applique la grille tarifaire fournie, sans négocier ni arbitrer un litige commercial. Un tonnage manquant ou une prestation non saisie par le chauffeur ne peut pas être reconstitué : le champ ressort à nul et doit être complété. Ne remplace pas le contrôle de gestion : elle prépare le relevé, l'émission de la facture reste une décision humaine.",
+   "risks": "Une distance ou un tonnage erronés, ou une prestation facturée à tort, génèrent un avoir et abîment la relation client ; à l'inverse, une prestation oubliée est une perte sèche. Garde-fous : rapprochement systématique du relevé avec l'ordre de transport et le bon de livraison émargé, contrôle des écarts de pesée par rapport au cubage annoncé, relecture des lignes à faible confiance avant émission, conservation des pièces justificatives (bons, tickets de pesée) rattachées à la facture.",
+   "status": "draft_ai",
+   "processes": [
+    {
+     "process": "PROC_TRA_FACTURATION",
+     "maillon": "ACT_TRANSPORTEUR_BOIS",
+     "relevance": 5
+    },
+    {
+     "process": "PROC_TRA_PESEE",
+     "maillon": "ACT_TRANSPORTEUR_BOIS",
+     "relevance": 3
+    }
+   ]
+  },
+  {
+   "code": "SKILL_TRA_PREUVE_LIVRAISON",
+   "name": "Générer une preuve de livraison structurée",
+   "description": "Structure une preuve de livraison (destinataire, date et heure, quantité livrée, état de la marchandise, signataire, réserves) à partir des éléments collectés par le chauffeur : photo du bon émargé, signature sur tablette, saisie ou dictée en cabine. Produit un enregistrement exploitable rattaché à l'ordre de transport et à la lettre de voiture.",
+   "skill_category": "generation",
+   "technical_complexity_score": 2,
+   "business_value": "Chez un transporteur qui enchaîne les rotations de grumiers, la preuve de livraison reste souvent un bon papier froissé retrouvé plusieurs jours après. La structurer dès la livraison fiabilise le rapprochement avec l'ordre de transport, coupe court aux litiges sur les quantités et débloque la facturation sans attendre le retour des documents à l'exploitation.",
+   "implementation_requirements": "Accès aux éléments de livraison collectés par le chauffeur (photo du bon signé, capture de signature, saisie ou dictée), idéalement via une application mobile de tournée ; OCR pour les bons photographiés ; rattachement à l'ordre de transport et à la lettre de voiture correspondants.",
+   "limits": "Ne remplace pas la signature du destinataire : elle doit rester présente sur le document source, la compétence ne fait que la retranscrire. Une photo de bon prise dans une cabine mal éclairée ou un émargement illisible donnent une extraction partielle : les champs douteux ressortent à nul, jamais devinés. Ne juge pas si une réserve est fondée et ne requalifie pas un écart de quantité : elle le signale pour arbitrage humain.",
+   "risks": "Une quantité ou un destinataire mal lus et facturés sans contrôle créent un litige client et faussent la traçabilité du lot livré. Garde-fous : conserver systématiquement la photo ou le scan du bon signé comme pièce probante, relire les champs à faible confiance avant d'attacher la preuve à la facture, faire ressortir toute réserve du destinataire de façon visible plutôt que de la noyer dans un champ libre.",
+   "status": "draft_ai",
+   "processes": [
+    {
+     "process": "PROC_TRA_TRANSPORT",
+     "maillon": "ACT_TRANSPORTEUR_BOIS",
+     "relevance": 5
+    }
+   ]
+  },
+  {
+   "code": "SKILL_TRV_CATALOGUE_FOURNISSEUR",
+   "name": "Intégrer un catalogue fournisseur au fichier articles",
+   "description": "Extrait les articles d'un catalogue ou d'un tarif fournisseur au format PDF (référence, désignation, dimensions, qualité, unité, prix) et les met au format d'import du fichier articles de l'ERP de l'entreprise, avec la famille de rattachement.",
+   "skill_category": "document_extraction",
+   "technical_complexity_score": 3,
+   "business_value": "Cas réalisé avec une TPE de menuiserie : plus de 1 200 articles extraits d'un catalogue de 312 pages et mis au format d'import de son ERP. Une saisie manuelle aurait pris plusieurs jours et se répète à chaque nouveau tarif.",
+   "implementation_requirements": "Catalogue ou tarif PDF avec texte sélectionnable, fichier d'exemple au format d'import de l'ERP (colonnes, séparateur, encodage), règles de nommage des désignations de l'entreprise.",
+   "limits": "Les catalogues très graphiques ou scannés demandent un contrôle plus large. Les champs absents du catalogue (poids, colisage) restent vides. Le prix de vente n'est pas calculé : il reste à appliquer la marge de l'entreprise.",
+   "risks": "Un prix mal extrait se retrouve dans les devis. Garde-fous : contrôle par échantillon (une ligne sur vingt) et sur les totaux par famille, import d'abord dans un environnement de test ou une famille isolée, conservation du fichier source.",
+   "status": "draft_ai",
+   "processes": [
+    {
+     "process": "PROC_TRV_ACHATS",
+     "maillon": null,
+     "relevance": 4
+    },
+    {
+     "process": "PROC_MEN_APPRO",
+     "maillon": "ACT_MENUISERIE",
+     "relevance": 4
+    },
+    {
+     "process": "PROC_CHB_APPRO",
+     "maillon": "ACT_CONSTRUCTION_BOIS",
+     "relevance": 3
+    }
+   ]
+  },
+  {
+   "code": "SKILL_TRV_CONTROLE_ARC",
+   "name": "Contrôler un accusé de réception de commande fournisseur",
+   "description": "Compare l'accusé de réception de commande (ARC) envoyé par le fournisseur à la commande passée : références, quantités, prix, remises, date de livraison. Signale chaque écart et propose un message de demande de correction.",
+   "skill_category": "control",
+   "technical_complexity_score": 2,
+   "business_value": "Remonté en atelier par une entreprise de construction : un ARC non contrôlé, c'est une date de livraison fausse et une production bloquée. Le contrôle systématique à réception évite les mauvaises surprises au moment où la matière manque.",
+   "implementation_requirements": "Commande fournisseur et ARC au format texte, PDF ou export ERP, date de besoin interne pour chaque ligne.",
+   "limits": "Ne connaît que les deux documents fournis : elle ne vérifie pas la disponibilité réelle chez le fournisseur. Les ARC scannés de mauvaise qualité peuvent être mal lus.",
+   "risks": "Un écart non signalé reste un risque de retard ou de surcoût. Garde-fous : contrôle sur chaque ARC reçu, écarts validés par l'acheteur, aucune réclamation envoyée automatiquement.",
+   "status": "draft_ai",
+   "processes": [
+    {
+     "process": "PROC_TRV_ACHATS",
+     "maillon": null,
+     "relevance": 5
+    },
+    {
+     "process": "PROC_MEN_APPRO",
+     "maillon": "ACT_MENUISERIE",
+     "relevance": 4
+    },
+    {
+     "process": "PROC_CHB_APPRO",
+     "maillon": "ACT_CONSTRUCTION_BOIS",
+     "relevance": 4
+    }
+   ]
+  },
+  {
+   "code": "SKILL_TRV_DEVIS_RDV",
+   "name": "Préparer un devis à partir des notes de rendez-vous",
+   "description": "Transforme les notes prises pendant un rendez-vous de cadrage (manuscrites retranscrites, dictées ou tapées) en une trame de devis structurée : besoin du client, périmètre, postes, hypothèses et questions restant à poser. Les prix restent à compléter par le chargé d'affaires.",
+   "skill_category": "generation",
+   "technical_complexity_score": 2,
+   "business_value": "Remonté en atelier par des dirigeants de construction bois : le devis part souvent plusieurs jours après le rendez-vous, faute de temps pour le mettre en forme. Une trame prête le jour même accélère la réponse et améliore le taux de transformation.",
+   "implementation_requirements": "Notes du rendez-vous, bibliothèque de postes ou devis types de l'entreprise, conditions générales de vente.",
+   "limits": "Ne chiffre pas : elle structure. Des notes incomplètes donnent une trame incomplète, signalée par la liste des questions à poser. Pour une menuiserie avec métré, la trame de devis menuiserie est plus adaptée.",
+   "risks": "Un devis envoyé avec un périmètre mal compris engage l'entreprise. Garde-fous : prix laissés vides, hypothèses et exclusions listées, validation du chargé d'affaires avant envoi.",
+   "status": "draft_ai",
+   "processes": [
+    {
+     "process": "PROC_TRV_DEVIS",
+     "maillon": null,
+     "relevance": 5
+    },
+    {
+     "process": "PROC_CHB_ETUDE_PRIX",
+     "maillon": "ACT_CONSTRUCTION_BOIS",
+     "relevance": 4
+    }
+   ]
+  },
+  {
+   "code": "SKILL_TRV_FICHE_PRODUCTION",
+   "name": "Établir la fiche de production depuis le devis accepté",
+   "description": "Lit un devis accepté et produit la fiche qui lance la fabrication : ouvrages, quantités, sections, essences, traitements, finitions, délais, points de vigilance. Signale les informations du devis insuffisantes pour fabriquer.",
+   "skill_category": "document_extraction",
+   "technical_complexity_score": 2,
+   "business_value": "Cas d'usage travaillé en formation sur site avec une scierie qui fabrique des aménagements extérieurs : la ressaisie du devis en fiche de production prend du temps et provoque des erreurs (section, traitement, quantité). C'est aussi l'un des cas fil rouge proposés dans l'Académie PerfIA.",
+   "implementation_requirements": "Devis acceptés au format texte ou PDF, modèle de fiche de production de l'entreprise, correspondance entre libellés commerciaux et références de fabrication.",
+   "limits": "Avant de construire ce cas d'usage, vérifier que le logiciel de gestion en place ne génère pas déjà la fiche de production : c'était le cas lors de l'atelier où il a été identifié. Ne planifie pas la fabrication.",
+   "risks": "Une erreur de section, de traitement ou de quantité se retrouve directement en atelier. Garde-fous : contrôle de la fiche par le responsable de fabrication avant lancement, liste des points manquants, aucun lancement automatique.",
+   "status": "draft_ai",
+   "processes": [
+    {
+     "process": "PROC_MEN_DEBIT",
+     "maillon": "ACT_MENUISERIE",
+     "relevance": 4
+    },
+    {
+     "process": "PROC_CHB_FABRICATION",
+     "maillon": "ACT_CONSTRUCTION_BOIS",
+     "relevance": 4
+    },
+    {
+     "process": "PROC_TRV_ADV",
+     "maillon": null,
+     "relevance": 3
+    }
+   ]
+  },
+  {
+   "code": "SKILL_TRV_LIRE_DCE",
+   "name": "Lire un dossier de consultation",
+   "description": "Lit le règlement de consultation, le CCTP et le programme d'un dossier de consultation (DCE) et en tire une fiche d'une page : objet, lots, critères de jugement, pièces à fournir, dates clés, visite obligatoire, points techniques à risque. Prépare le tableau de réponse en listant les pièces déjà disponibles dans l'entreprise et celles à produire.",
+   "skill_category": "document_extraction",
+   "technical_complexity_score": 2,
+   "business_value": "Cas d'usage le plus cité en atelier par les bureaux d'études et les entreprises qui répondent aux marchés publics. La lecture d'un DCE prend plusieurs heures et une pièce oubliée suffit à rendre une offre irrégulière. Une fiche de lecture fiable réduit le temps d'analyse et le risque d'oubli, et aide à décider vite si l'on répond ou non.",
+   "implementation_requirements": "Pièces du DCE au format texte ou PDF lisible, liste des pièces administratives types de l'entreprise (Kbis, attestations, références, CV), modèle de fiche go / no go si l'entreprise en a un.",
+   "limits": "Ne remplace pas la lecture complète par la personne qui signe l'offre. Les PDF scannés de mauvaise qualité et les annexes graphiques (plans) sont mal exploités. Ne juge pas l'intérêt commercial du marché : elle donne les éléments pour en décider.",
+   "risks": "Une date ou une pièce mal extraite peut faire perdre un marché. Garde-fous : chaque information renvoie à la page et au document source, les dates limites sont vérifiées à la main, les documents clients sont anonymisés si l'outil n'est pas maîtrisé par l'entreprise.",
+   "status": "draft_ai",
+   "processes": [
+    {
+     "process": "PROC_TRV_APPEL_OFFRES",
+     "maillon": null,
+     "relevance": 5
+    },
+    {
+     "process": "PROC_CHB_ETUDE_PRIX",
+     "maillon": "ACT_CONSTRUCTION_BOIS",
+     "relevance": 4
+    },
+    {
+     "process": "PROC_MEN_CHIFFRAGE",
+     "maillon": "ACT_MENUISERIE",
+     "relevance": 3
+    }
+   ]
+  },
+  {
+   "code": "SKILL_TRV_MODE_OPERATOIRE",
+   "name": "Rédiger un mode opératoire à partir d'une explication orale",
+   "description": "Transforme l'explication orale d'une personne expérimentée (enregistrement retranscrit ou notes) en mode opératoire écrit : objectif, prérequis, étapes numérotées, points de contrôle, consignes de sécurité, erreurs fréquentes. Liste les questions à reposer à l'expert.",
+   "skill_category": "generation",
+   "technical_complexity_score": 2,
+   "business_value": "Remonté en atelier et proposé comme cas fil rouge de l'Académie : le savoir-faire vit dans la tête de quelques anciens. Le passer à l'écrit sécurise la transmission, facilite l'intégration des nouveaux et sert de base aux fiches de poste sécurité.",
+   "implementation_requirements": "Enregistrement ou notes de l'explication, retranscription automatique si besoin, modèle de mode opératoire de l'entreprise, consignes de sécurité applicables au poste.",
+   "limits": "Ne connaît que ce qui a été dit : les gestes implicites manquent souvent. Le premier jet doit être relu et testé par l'expert et par une personne qui découvre le poste.",
+   "risks": "Un mode opératoire incomplet sur un poste dangereux. Garde-fous : validation par l'expert et le responsable sécurité avant diffusion, consignes de sécurité reprises du document officiel de l'entreprise, version et date sur chaque mode opératoire.",
+   "status": "draft_ai",
+   "processes": [
+    {
+     "process": "PROC_TRV_FORMATION",
+     "maillon": null,
+     "relevance": 5
+    },
+    {
+     "process": "PROC_TRV_SECURITE",
+     "maillon": null,
+     "relevance": 4
+    }
+   ]
+  },
+  {
+   "code": "SKILL_TRV_PIECES_ECRITES",
+   "name": "Rédiger une pièce écrite depuis un modèle maison",
+   "description": "Produit une note méthodologique, un rapport ou un compte rendu à partir du modèle de l'entreprise et des notes brutes du projet (notes de visite, échanges, photos commentées). Respecte le plan, le ton et la mise en forme du modèle, et liste les informations manquantes.",
+   "skill_category": "generation",
+   "technical_complexity_score": 2,
+   "business_value": "Les ateliers ont placé la rédaction (notes méthodologiques, rapports, comptes rendus, mémoires techniques) parmi les gains rapides de toutes les tables. Passer des notes brutes à un document au format maison sans ressaisie libère du temps d'ingénieur et de chargé d'affaires.",
+   "implementation_requirements": "Un ou deux modèles maison par type de document, notes du projet, éléments de référence de l'entreprise (moyens, références de chantiers) pour les mémoires techniques.",
+   "limits": "La qualité dépend des notes fournies : elle ne crée pas de constat qui n'y figure pas. Ne met pas en forme dans le logiciel de traitement de texte de l'entreprise sans intégration dédiée : le résultat est un texte structuré à coller dans le modèle.",
+   "risks": "Un compte rendu diffusé avec une erreur de constat ou d'engagement peut avoir une portée contractuelle. Garde-fous : relecture obligatoire avant diffusion, informations manquantes listées en fin de document, aucune donnée client nominative envoyée à un outil non maîtrisé.",
+   "status": "draft_ai",
+   "processes": [
+    {
+     "process": "PROC_BET_SUIVI",
+     "maillon": "ACT_BUREAU_ETUDES",
+     "relevance": 4
+    },
+    {
+     "process": "PROC_TRV_APPEL_OFFRES",
+     "maillon": null,
+     "relevance": 4
+    },
+    {
+     "process": "PROC_BET_DOE",
+     "maillon": "ACT_BUREAU_ETUDES",
+     "relevance": 3
+    }
+   ]
+  },
+  {
+   "code": "SKILL_TRV_PROJETS_SIMILAIRES",
+   "name": "Retrouver les projets similaires dans les archives",
+   "description": "À partir d'une nouvelle demande, retrouve dans les archives de l'entreprise les projets les plus proches (type d'ouvrage, dimensions, essences, contraintes) et en résume ce qui est réutilisable : solution retenue, temps passé, prix, difficultés rencontrées.",
+   "skill_category": "recommendation",
+   "technical_complexity_score": 3,
+   "business_value": "Remonté en atelier par des bureaux d'études et des entreprises de construction : le savoir-faire existe dans les projets passés mais on ne le retrouve pas. Rapprocher une demande d'un projet déjà réalisé accélère l'avant-projet et le chiffrage par analogie.",
+   "implementation_requirements": "Archives de projets accessibles et organisées (une fiche ou un dossier par projet), éventuellement une fiche synthèse par projet (ouvrage, client type, montant, temps), outil de recherche dans un ensemble de documents.",
+   "limits": "Ne trouve que ce qui est documenté : des archives désordonnées donnent des résultats pauvres. Un projet ressemblant n'est pas un projet identique : le chiffrage par analogie reste une estimation.",
+   "risks": "Réutiliser un prix ou une solution sans tenir compte des différences du nouveau projet. Garde-fous : différences listées explicitement à côté de chaque projet proposé, prix historiques présentés avec leur date, accès limité aux dossiers utiles.",
+   "status": "draft_ai",
+   "processes": [
+    {
+     "process": "PROC_BET_AVANT_PROJET",
+     "maillon": "ACT_BUREAU_ETUDES",
+     "relevance": 4
+    },
+    {
+     "process": "PROC_TRV_DEVIS",
+     "maillon": null,
+     "relevance": 4
+    },
+    {
+     "process": "PROC_CHB_ETUDE_PRIX",
+     "maillon": "ACT_CONSTRUCTION_BOIS",
+     "relevance": 3
+    }
+   ]
+  },
+  {
+   "code": "SKILL_TRV_TABLEAU_BORD",
+   "name": "Produire le tableau de bord hebdomadaire depuis les exports",
+   "description": "Consolide les exports de l'ERP, des tableurs et du CRM en un tableau de bord d'une page : indicateurs choisis par le dirigeant, évolution sur la période, écarts aux objectifs avec un commentaire court, points d'attention à partager avec les équipes.",
+   "skill_category": "reporting",
+   "technical_complexity_score": 3,
+   "business_value": "Première catégorie de besoins aux ateliers de La Rochelle (quatre cas) : les données existent mais sont éclatées entre plusieurs outils. Un tableau de bord hebdomadaire produit en quelques minutes donne au dirigeant la bonne information au bon moment.",
+   "implementation_requirements": "Exports réguliers et stables (même format chaque semaine) des outils concernés, liste des indicateurs et de leur mode de calcul validée par le dirigeant, objectifs de la période.",
+   "limits": "Le calcul des indicateurs doit être défini et vérifié une première fois par l'entreprise : l'outil applique la règle, il ne la choisit pas. Un changement de format d'export casse la consolidation. Pour un usage durable, un vrai outil de pilotage connecté reste préférable.",
+   "risks": "Une décision prise sur un indicateur mal calculé. Garde-fous : formules écrites et testées sur un mois connu, contrôle de cohérence des totaux avec l'ERP, commentaire distinguant le constat de l'interprétation.",
+   "status": "draft_ai",
+   "processes": [
+    {
+     "process": "PROC_TRV_DATA",
+     "maillon": null,
+     "relevance": 5
+    },
+    {
+     "process": "PROC_TRV_REPORTING_FIN",
+     "maillon": null,
+     "relevance": 4
+    }
+   ]
+  },
+  {
+   "code": "SKILL_TRV_TRI_MAILS",
+   "name": "Trier les mails par projet et préparer les réponses",
+   "description": "Classe les mails entrants par projet ou par affaire, signale les urgences (échéance, réclamation, demande bloquante) et propose un brouillon de réponse pour les demandes simples. Rien n'est envoyé sans relecture.",
+   "skill_category": "classification",
+   "technical_complexity_score": 2,
+   "business_value": "Le tri des mails par projet et le repérage des urgences reviennent dans les trois tables de bureaux d'études. Un tri quotidien avec brouillons réduit le temps de traitement de la boîte et le risque de laisser passer une demande importante.",
+   "implementation_requirements": "Accès en lecture à la boîte concernée ou export des mails, liste des projets en cours avec leurs mots-clés (nom, adresse, client, numéro d'affaire), règles d'urgence de l'entreprise.",
+   "limits": "Un mail ambigu ou sans référence de projet peut être mal classé. Les pièces jointes volumineuses (plans) ne sont pas analysées. Les brouillons couvrent les demandes simples, pas les négociations.",
+   "risks": "Accès à une boîte mail : données personnelles et confidentielles. Garde-fous : outil choisi selon la charte IA de l'entreprise, accès limité aux boîtes et dossiers utiles, aucun envoi automatique, brouillons relus avant envoi.",
+   "status": "draft_ai",
+   "processes": [
+    {
+     "process": "PROC_TRV_ADV",
+     "maillon": null,
+     "relevance": 4
+    },
+    {
+     "process": "PROC_BET_SUIVI",
+     "maillon": "ACT_BUREAU_ETUDES",
+     "relevance": 3
+    }
+   ]
+  },
+  {
+   "code": "SKILL_TRV_VEILLE_AO",
+   "name": "Trier les avis d'appels d'offres",
+   "description": "Reçoit les avis de marchés issus des alertes (plateformes de marchés publics, BOAMP, profils acheteurs) et les classe selon le profil de l'entreprise : métier, zone géographique, montant, délai. Résume chaque avis retenu en trois lignes et écarte les autres avec le motif.",
+   "skill_category": "classification",
+   "technical_complexity_score": 2,
+   "business_value": "Les ateliers ont fait ressortir une veille dispersée et chronophage : plusieurs alertes par jour, la plupart hors périmètre. Un tri automatique quotidien concentre l'attention sur les quelques avis pertinents et évite de rater une consultation intéressante.",
+   "implementation_requirements": "Flux d'alertes ou export des avis (mail, CSV, flux de la plateforme), profil de ciblage écrit par l'entreprise (métiers, départements, montants, types d'acheteurs exclus).",
+   "limits": "Ne lit que le résumé de l'avis : un marché mal décrit par l'acheteur peut être écarté à tort. Ne remplace pas l'abonnement aux plateformes. La qualité du tri dépend directement du profil de ciblage.",
+   "risks": "Un avis pertinent classé hors cible fait perdre une opportunité. Garde-fous : conserver la liste des avis écartés avec leur motif, la relire chaque semaine au début, ajuster le profil de ciblage à partir des erreurs constatées.",
+   "status": "draft_ai",
+   "processes": [
+    {
+     "process": "PROC_TRV_APPEL_OFFRES",
+     "maillon": null,
+     "relevance": 4
+    },
+    {
+     "process": "PROC_TRV_PROSPECTION",
+     "maillon": null,
+     "relevance": 4
+    }
+   ]
+  },
+  {
+   "code": "SKILL_VALORISER_CONNEXES",
+   "name": "Valoriser les connexes de scierie",
+   "description": "Analyse les volumes de connexes disponibles par type (plaquettes, sciure, écorces, dosses et délignures, chutes) et suggère leur meilleure orientation selon les débouchés accessibles à la scierie : trituration et panneaux, bois énergie (plaquettes forestières, granulés), litière et paillage, ou combustion interne au séchoir. Aide à arbitrer entre valorisation matière et valorisation énergie au regard des contrats et des prix en cours.",
+   "skill_category": "recommendation",
+   "technical_complexity_score": 2,
+   "business_value": "Les connexes représentent 40 à 60 % du volume entrant d'une scierie et pèsent réellement sur la marge. Un pilotage au fil de l'eau, sans visibilité sur les débouchés, conduit à brader la plaquette ou à laisser s'accumuler la sciure. Rapprocher volumes disponibles et débouchés valorisables aide à orienter chaque coproduit vers son usage le plus rémunérateur et à sécuriser les enlèvements.",
+   "implementation_requirements": "Volumes de connexes produits par type et par période, liste des débouchés et contrats en cours (papeterie, fabricant de panneaux, chaufferie, éleveurs) avec leurs prix et conditions d'enlèvement, et le cas échéant les besoins internes (alimentation du séchoir). Données de production de sciages pour estimer les volumes de connexes générés.",
+   "limits": "Émet une recommandation d'orientation à partir des débouchés saisis : elle ne négocie pas les contrats, ne garantit pas la disponibilité d'un enlèvement et ne connaît pas les prix qui ne lui sont pas fournis. Ne se substitue pas à une analyse de rentabilité complète (coûts de stockage, de transport, humidité de la plaquette) : elle oriente, l'arbitrage économique final reste humain.",
+   "risks": "Une orientation suivie sans vérification peut se révéler non rentable une fois les coûts de transport, de séchage ou de stockage intégrés, ou saturer un débouché au détriment d'un contrat plus stable. Garde-fous : valider économiquement chaque orientation proposée avant engagement, tenir compte des contrats d'enlèvement prioritaires et de la saisonnalité de la demande énergie, ne pas déséquilibrer un débouché régulier pour un gain ponctuel.",
+   "status": "validated",
+   "processes": [
+    {
+     "process": "PROC_SCI_CONNEXES",
+     "maillon": "ACT_SCIERIE",
+     "relevance": null
+    }
+   ]
+  }
+ ]
+}

@@ -1,0 +1,54 @@
+.idea
+.DS_Store
+
+# Environnement de dev local (binaire PocketBase, données SQLite, env.sh, logs)
+.local/
+pb_data/
+*.log
+
+# Binaire PocketBase téléchargé à la racine par erreur. « /pocketbase » seul ignorerait aussi le dossier
+# pocketbase/ (hooks, migrations, schéma) : la négation « !/pocketbase/ » le garde versionné.
+/pocketbase
+!/pocketbase/
+/pocketbase.exe
+
+# Dépendances
+node_modules/
+
+# Fichiers d'environnement (contiennent des secrets : ne jamais committer)
+.env
+.env.*
+!.env.base
+!.env.example
+!infra/deploy/overlays/*/.env.local
+!infra/deploy/overlays/*/.env.dev
+!infra/deploy/overlays/*/.env.prod
+
+# Secrets d'infrastructure et fichiers fusionnés générés au déploiement
+infra/deploy/overlays/*/.env.secrets
+*.merged
+/tmp/.env.*
+
+# Rapports qualité (générés par le skill /quality)
+reports/quality/*.md
+reports/quality/.last-run.json
+
+# Artefacts d'audit des skills
+.claude/skills/accessibility/a11y-audit/last-audit.json
+.claude/skills/accessibility/a11y-audit/node_modules/
+.claude/skills/seo/last-audit.json
+.claude/skills/seo/lighthouse-*.json
+.claude/skills/ecoconception/last-audit.json
+.claude/skills/ecoconception/ecoindex-*.json
+.claude/skills/ecoconception/ecoindex-*.html
+.claude/skills/gdpr/last-audit.json
+.claude/skills/security/last-audit.json
+
+# Contexte généré par le bundle a11y-audit à sa première exécution
+.a11y-audit/
+
+# Notes locales qui contiennent des secrets (ex. « #BREVO », « local.env ») : jamais versionnées.
+# Les secrets vont dans .local/env.sh (local) ou dans les secrets Coolify (déploiement).
+\#*
+local.env
+*.secret

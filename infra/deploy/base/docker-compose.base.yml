@@ -1,0 +1,62 @@
+# Configuration Docker Compose de base pour PerfIA Diagnostic IA (PocketBase, une seule image).
+# Ce fichier définit tous les services sans configuration propre à un environnement.
+# Les overlays (local/dev/prod) ajoutent ports, labels Traefik, limites et volumes.
+
+x-common-labels: &common-labels
+  traefik.docker.network: ${DOCKER_NETWORK}
+
+services:
+  # =============================================================================
+  # REVERSE PROXY
+  # =============================================================================
+  traefik:
+    image: traefik:${TRAEFIK_VERSION:-v3.6.1}
+    container_name: ${PROJECT_SLUG}-traefik
+    command:
+      - "--accesslog=true"
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+      - "--entryPoints.web.address=:80"
+      - "--entryPoints.websecure.address=:443"
+      - "--certificatesresolvers.letsencrypt-resolver.acme.httpchallenge=true"
+      - "--certificatesresolvers.letsencrypt-resolver.acme.httpchallenge.entrypoint=web"
+      - "--certificatesresolvers.letsencrypt-resolver.acme.email=${ACME_EMAIL}"
+      - "--certificatesresolvers.letsencrypt-resolver.acme.storage=/letsencrypt/acme.json"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - traefik-certificates:/letsencrypt
+    networks:
+      - net
+
+  # =============================================================================
+  # APPLICATION (PocketBase + hooks + interface web)
+  # =============================================================================
+  app:
+    image: ${DOCKER_REGISTRY_REPOSITORY}${PROJECT_SLUG}-app:${APP_VERSION}
+    platform: linux/amd64
+    container_name: ${PROJECT_SLUG}-app
+    labels:
+      <<: *common-labels
+    environment:
+      # IA (optionnel)
+      # E-mails via l'API Brevo (optionnel)
+      APP_BREVO_API_KEY: ${APP_BREVO_API_KEY:-}
+      APP_MAIL_FROM: ${APP_MAIL_FROM:-}
+      APP_BREVO_LIST_ID: ${APP_BREVO_LIST_ID:-}
+      APP_SEND_REPORTS: ${APP_SEND_REPORTS:-}
+      # URL interne (optionnel, utilisée par les hooks pour s'appeler eux-mêmes)
+      APP_INTERNAL_URL: ${APP_INTERNAL_URL:-http://127.0.0.1:8090}
+    expose:
+      - "8090"
+    volumes:
+      - app-data:/pb/pb_data
+    networks:
+      - net
+
+networks:
+  net:
+    name: ${DOCKER_NETWORK}
+
+volumes:
+  traefik-certificates:
+  app-data:

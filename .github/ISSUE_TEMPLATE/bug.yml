@@ -1,0 +1,55 @@
+name: Bogue
+description: Quelque chose ne fonctionne pas comme décrit dans la documentation.
+labels: ["bogue"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Merci de prendre le temps de signaler un problème. **Une faille de sécurité ne se signale pas ici** : voir SECURITY.md.
+  - type: textarea
+    id: what
+    attributes:
+      label: Ce qui se passe
+      description: Le comportement observé, avec le message d'erreur exact s'il y en a un.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Ce qui était attendu
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Étapes pour reproduire
+      placeholder: |
+        1. make dev
+        2. Créer un compte avec ...
+        3. ...
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Version de PerfIA Diagnostic IA
+      description: Contenu du fichier VERSION, ou hash du commit.
+    validations:
+      required: true
+  - type: dropdown
+    id: env
+    attributes:
+      label: Environnement
+      options:
+        - Local (make dev)
+        - Coolify
+        - Docker Compose + Traefik
+        - Autre
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Journaux
+      description: Extrait du journal PocketBase ou de la console du navigateur. Retirez toute clé, adresse e-mail ou donnée personnelle.
+      render: text

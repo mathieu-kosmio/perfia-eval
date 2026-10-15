@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "perfia-eval",
+      "runtimeExecutable": "./scripts/pb.sh",
+      "runtimeArgs": [],
+      "port": 8097
+    }
+  ]
+}

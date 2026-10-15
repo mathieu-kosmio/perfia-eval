@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="only light">
+<meta name="robots" content="noindex, nofollow">
+<title>Vue salle · Diagnostic IA PerfIA</title>
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<link rel="stylesheet" href="/css/perfia.css">
+<style>
+  .room { max-width: 1400px; margin: 0 auto; padding: 18px 20px 30px; display: grid; gap: 18px; grid-template-columns: 1fr; }
+  @media (min-width: 980px) { .room { grid-template-columns: minmax(280px, 30%) 1fr; align-items: start; } }
+  .join { text-align: center; position: sticky; top: 12px; }
+  .join h1 { font-size: clamp(22px, 2.4vw, 32px); margin: 4px 0 6px; }
+  .join .qr { background: var(--paper); border-radius: 14px; padding: 10px; width: min(100%, 320px); margin: 12px auto; }
+  .join .qr svg { width: 100%; height: auto; }
+  .join .url { font: 700 clamp(16px, 1.6vw, 22px) var(--font-mono); color: var(--accent); word-break: break-all; }
+  .big { font: 700 clamp(48px, 6vw, 84px)/1 var(--font-display); color: var(--accent); }
+  .grid3 { display: grid; gap: 14px; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); }
+  .stat h2 { font-size: 18px; margin: 0 0 2px; }
+  .stat .mean { font: 700 40px/1.1 var(--font-display); }
+  .stat .mean small { font-size: 16px; color: var(--muted); font-weight: 600; }
+  .bars { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; align-items: end; height: 110px; margin: 10px 0 4px; }
+  .bars div { background: var(--accent-fill); border-radius: 6px 6px 0 0; min-height: 3px; position: relative; }
+  .bars div span { position: absolute; top: -20px; left: 0; right: 0; text-align: center; font-size: 13px; font-weight: 700; }
+  .bars-x { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; text-align: center; font-size: 11px; color: var(--muted); }
+  .base { font-size: 14px; color: var(--muted); margin: 8px 0 0; }
+  .base b { color: var(--ink); }
+  .top { list-style: none; padding: 0; margin: 0; }
+  .top li { display: grid; grid-template-columns: 1.6em 1fr auto; gap: 10px; align-items: center; margin: 0 0 10px; }
+  .top .bar { grid-column: 2 / 4; height: 10px; border-radius: 6px; background: var(--line); overflow: hidden; }
+  .top .bar i { display: block; height: 100%; border-radius: 6px; }
+  .top .n { font-weight: 700; }
+  .waiting { text-align: center; padding: 40px 10px; }
+  .meta { display: flex; gap: 12px; align-items: center; justify-content: space-between; font-size: 13px; color: var(--muted); }
+  .access { max-width: 420px; margin: 60px auto; padding: 0 16px; }
+</style>
+<script src="/vendor/qrcode.js" defer></script>
+<script src="/js/ui.js" defer></script>
+<script src="/js/salle.js" defer></script>
+</head>
+<body class="dark">
+<div id="brand"></div>
+<main id="main"><p class="access muted">Chargement…</p></main>
+</body>
+</html>

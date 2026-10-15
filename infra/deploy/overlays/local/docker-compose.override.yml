@@ -1,0 +1,19 @@
+# Overlay de développement local
+#
+# En local, AUCUN service ne tourne dans Docker :
+# - Traefik est inutile (pas de TLS ni de domaine en local) ;
+# - l'application est lancée comme binaire natif par `scripts/pb.sh` (make dev),
+#   qui télécharge PocketBase dans .local/ et sert pocketbase/pb_hooks + web/
+#   sur http://127.0.0.1:8090 avec rechargement à chaud des hooks.
+# Les deux services sont donc placés dans le profil `disabled` : `deploy.sh local up`
+# ne démarre rien, mais `deploy.sh local validate` vérifie que la configuration
+# de base reste cohérente.
+
+services:
+  traefik:
+    profiles:
+      - disabled
+
+  app:
+    profiles:
+      - disabled

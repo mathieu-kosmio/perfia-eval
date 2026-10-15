@@ -1,0 +1,41 @@
+# Overlay de l'environnement de développement (dev)
+# Images construites par la CI, politique de redémarrage `unless-stopped`, limites mémoire.
+# Traefik termine le TLS avec Let's Encrypt et redirige HTTP vers HTTPS.
+# Un seul domaine : l'application (interface, API, console /_/) est servie à la racine.
+
+services:
+  traefik:
+    ports:
+      - "80:80"
+      - "443:443"
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+
+  app:
+    labels:
+      # Syntaxe liste : Compose n'interpole pas les clés YAML, seulement les valeurs.
+      # Routeurs préfixés par PROJECT_SLUG pour héberger plusieurs projets derrière un même Traefik.
+      - "traefik.enable=true"
+      - "traefik.http.routers.${PROJECT_SLUG}-app.rule=Host(`${HOST_NAME}`)"
+      - "traefik.http.routers.${PROJECT_SLUG}-app.entrypoints=websecure"
+      - "traefik.http.routers.${PROJECT_SLUG}-app.tls.certresolver=letsencrypt-resolver"
+      - "traefik.http.routers.${PROJECT_SLUG}-app-http.rule=Host(`${HOST_NAME}`)"
+      - "traefik.http.routers.${PROJECT_SLUG}-app-http.entrypoints=web"
+      - "traefik.http.routers.${PROJECT_SLUG}-app-http.middlewares=${PROJECT_SLUG}-redirect-to-https"
+      - "traefik.http.middlewares.${PROJECT_SLUG}-redirect-to-https.redirectscheme.scheme=https"
+      - "traefik.http.middlewares.${PROJECT_SLUG}-redirect-to-https.redirectscheme.permanent=true"
+      - "traefik.http.services.${PROJECT_SLUG}-app.loadbalancer.server.port=8090"
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+
+volumes:
+  traefik-certificates:
+    name: ${PROJECT_SLUG}-traefik-certificates
+  app-data:
+    name: ${PROJECT_SLUG}-app-data

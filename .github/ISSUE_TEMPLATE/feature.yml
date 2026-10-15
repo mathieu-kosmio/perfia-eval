@@ -1,0 +1,35 @@
+name: Évolution
+description: Proposer une amélioration du squelette.
+labels: ["évolution"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        PerfIA Diagnostic IA vise la simplicité maximale : un binaire, un fichier HTML, pas de build. Une évolution doit rester utile à la plupart des projets qui partent du squelette.
+  - type: textarea
+    id: need
+    attributes:
+      label: Le besoin
+      description: Le problème rencontré, dans quel projet, et pourquoi le squelette actuel ne suffit pas.
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: La proposition
+      description: Ce qui changerait, et les fichiers concernés si vous les connaissez.
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives envisagées
+  - type: checkboxes
+    id: rules
+    attributes:
+      label: Règles de fond
+      options:
+        - label: L'isolation entre organisations reste portée par les règles d'accès de pb_schema.json.
+          required: true
+        - label: Aucune clé IA ni donnée d'une organisation ne sort du serveur.
+          required: true

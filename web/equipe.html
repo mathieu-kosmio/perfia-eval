@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="only light">
+<meta name="robots" content="noindex, nofollow">
+<title>Équipe · Diagnostic IA PerfIA</title>
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<link rel="stylesheet" href="/css/perfia.css">
+<style>
+  body { background: var(--bg-alt); }
+  .top { display: flex; align-items: center; gap: 12px; padding: 12px 16px; background: var(--ink-900); color: var(--on-dark); }
+  .top b { flex: 1; } .top button { color: var(--on-dark); }
+  .page { max-width: 1100px; margin: 0 auto; padding: 18px 16px 40px; }
+  .page h1 { font-size: 26px; margin: 4px 0 14px; }
+  .page h2 { font-size: 20px; margin: 0 0 12px; }
+  .row { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+  .grid2 { display: grid; gap: 0 16px; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); }
+  table.list { width: 100%; border-collapse: collapse; font-size: 14px; }
+  table.list th { text-align: left; font: 700 11px var(--font-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); padding: 8px 6px; border-bottom: 2px solid var(--line); }
+  table.list td { padding: 8px 6px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  table.list select { min-height: 40px; border-radius: 8px; border: 1px solid var(--line-strong); padding: 4px 6px; background: var(--surface); }
+  .scroll { overflow-x: auto; }
+  .links { display: grid; gap: 16px; grid-template-columns: 180px 1fr; align-items: start; }
+  .links .qr { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 6px; }
+  .links code { font: 600 14px var(--font-mono); word-break: break-all; background: var(--surface-2); padding: 4px 8px; border-radius: 6px; display: inline-block; }
+  .btn.sm { min-height: 40px; padding: 6px 12px; font-size: 14px; }
+  .status { font: 700 11px var(--font-mono); letter-spacing: .08em; text-transform: uppercase; padding: 3px 8px; border-radius: 999px; border: 1.5px solid currentColor; }
+  .status.ouverte { color: var(--accent); } .status.fermee { color: var(--muted); } .status.brouillon { color: var(--xf-gold-600); }
+  .key { font: 700 15px var(--font-mono); background: var(--surface-2); padding: 10px; border-radius: 8px; word-break: break-all; }
+  @media (max-width: 640px) { .links { grid-template-columns: 1fr; } .links .qr { max-width: 220px; } }
+</style>
+<script src="/vendor/qrcode.js" defer></script>
+<script src="/js/ui.js" defer></script>
+<script src="/js/equipe.js" defer></script>
+</head>
+<body>
+<div class="top"><img src="/assets/logos/perfia-blanc.svg" alt="" width="30" height="30"><b>Diagnostic IA PerfIA · Équipe</b><button type="button" class="linkbtn" id="logout" hidden>Se déconnecter</button></div>
+<main id="main" class="page"><p class="muted">Chargement…</p></main>
+</body>
+</html>

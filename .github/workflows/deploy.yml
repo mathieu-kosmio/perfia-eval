@@ -1,0 +1,239 @@
+name: Deploy
+
+# Déploiement manuel sur un serveur (dev ou prod) via SSH :
+# copie de infra/deploy, secrets → .env.secrets, pull de l'image, sauvegarde
+# optionnelle du volume pb_data, deploy.sh up, vérification /api/health.
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environnement cible'
+        required: true
+        type: choice
+        options:
+          - dev
+          - prod
+      version:
+        description: 'Version à déployer (ex. 0.1.0)'
+        required: true
+        type: string
+      backup_before:
+        description: 'Sauvegarder pb_data (SQLite + fichiers) avant de redémarrer'
+        required: false
+        type: boolean
+        default: true
+
+# Le jeton GitHub ne sert qu'à lire le code et à tirer l'image depuis GHCR.
+permissions:
+  contents: read
+  packages: read
+
+jobs:
+  deploy:
+    name: Déployer sur ${{ inputs.environment }}
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment }}
+
+    steps:
+      - name: Récupérer le code
+        uses: actions/checkout@v4
+
+      - name: Lire la configuration du projet
+        id: config
+        run: |
+          echo "slug=$(grep '^PROJECT_SLUG=' infra/deploy/base/.env.base | cut -d'=' -f2)" >> "$GITHUB_OUTPUT"
+
+      # La version est lue depuis l'environnement, jamais collée dans le script : une valeur comme
+      # `";curl …|sh;"` ne peut pas s'exécuter. Les étapes suivantes n'utilisent la version qu'une fois validée.
+      - name: Valider les entrées
+        env:
+          VERSION: ${{ inputs.version }}
+          TARGET: ${{ inputs.environment }}
+          SLUG: ${{ steps.config.outputs.slug }}
+        run: |
+          if [[ ! "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9]+)?$ ]]; then
+            echo "Erreur : format de version invalide. Attendu : x.y.z ou x.y.z-suffixe"
+            exit 1
+          fi
+          if [[ ! "$SLUG" =~ ^[a-z0-9][a-z0-9-]*$ ]]; then
+            echo "Erreur : PROJECT_SLUG invalide dans infra/deploy/base/.env.base"
+            exit 1
+          fi
+          echo "Environnement : $TARGET"
+          echo "Version : $VERSION"
+          echo "Projet : $SLUG"
+
+      - name: Préparer SSH
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+
+      # Empreinte du serveur : variable SSH_KNOWN_HOSTS (sortie de `ssh-keyscan -p <port> <hôte>` relue à la main).
+      # Sans elle, l'empreinte est acceptée au premier contact, ce qui expose les secrets à une interception.
+      - name: Configurer SSH
+        env:
+          KNOWN_HOSTS: ${{ vars.SSH_KNOWN_HOSTS }}
+        run: |
+          mkdir -p ~/.ssh && chmod 700 ~/.ssh
+          if [ -n "$KNOWN_HOSTS" ]; then
+            printf '%s\n' "$KNOWN_HOSTS" >> ~/.ssh/known_hosts
+          else
+            echo "::warning::Variable SSH_KNOWN_HOSTS absente : empreinte du serveur acceptée sans vérification (voir docs/deploiement.md)."
+            ssh-keyscan -H -p ${{ vars.SSH_PORT || 22 }} ${{ vars.DEPLOY_HOST }} >> ~/.ssh/known_hosts
+          fi
+          cat >> ~/.ssh/config << EOF
+          Host ${{ vars.DEPLOY_HOST }}
+            Port ${{ vars.SSH_PORT || 22 }}
+            ServerAliveInterval 30
+            ServerAliveCountMax 10
+            TCPKeepAlive yes
+            Compression yes
+          EOF
+
+      - name: Créer le fichier de secrets
+        run: |
+          umask 077
+          cat > /tmp/.env.secrets << 'EOF'
+          APP_BREVO_API_KEY=${{ secrets.SECRET_APP_BREVO_API_KEY }}
+          APP_MAIL_FROM=${{ secrets.SECRET_APP_MAIL_FROM }}
+          EOF
+          # Même registre que dev.yml : ghcr.io/<propriétaire du dépôt en minuscules>/
+          echo "DOCKER_REGISTRY_REPOSITORY=ghcr.io/${GITHUB_REPOSITORY_OWNER,,}/" >> /tmp/.env.secrets
+
+      - name: Copier les fichiers d'infrastructure sur le serveur
+        env:
+          SLUG: ${{ steps.config.outputs.slug }}
+        run: |
+          echo "Copie des fichiers d'infrastructure vers ${{ vars.DEPLOY_HOST }}..."
+
+          # Création des dossiers cibles
+          ssh ${{ vars.DEPLOY_USER }}@${{ vars.DEPLOY_HOST }} "mkdir -p ~/${SLUG}/infra/deploy ~/${SLUG}/backups"
+
+          # Copie des fichiers infra via tar sur SSH
+          echo "Copie de infra/deploy..."
+          tar czf - -C infra/deploy base overlays/${{ inputs.environment }} scripts | \
+            ssh ${{ vars.DEPLOY_USER }}@${{ vars.DEPLOY_HOST }} "cd ~/${SLUG}/infra/deploy && tar xzf -"
+
+          # Copie des secrets
+          echo "Copie des secrets..."
+          cat /tmp/.env.secrets | ssh ${{ vars.DEPLOY_USER }}@${{ vars.DEPLOY_HOST }} \
+            "umask 077 && cat > ~/${SLUG}/infra/deploy/overlays/${{ inputs.environment }}/.env.secrets"
+
+      - name: Récupérer la dernière image
+        env:
+          SLUG: ${{ steps.config.outputs.slug }}
+        run: |
+          # Connexion à GHCR sur le serveur
+          echo "${{ secrets.GITHUB_TOKEN }}" | ssh ${{ vars.DEPLOY_USER }}@${{ vars.DEPLOY_HOST }} \
+            "docker login ghcr.io -u ${{ github.actor }} --password-stdin"
+
+          # Pull de l'image
+          ssh ${{ vars.DEPLOY_USER }}@${{ vars.DEPLOY_HOST }} bash << EOF 2>&1 | cat
+            set -e
+            cd ~/${SLUG}/infra/deploy
+            ENV_FILE="overlays/${{ inputs.environment }}/.env.${{ inputs.environment }}"
+            SECRETS_FILE="overlays/${{ inputs.environment }}/.env.secrets"
+            umask 077
+            trap 'rm -f "\$ENV_FILE.merged"; docker logout ghcr.io >/dev/null 2>&1 || true' EXIT
+            cp "\$ENV_FILE" "\$ENV_FILE.merged"
+            cat "\$SECRETS_FILE" >> "\$ENV_FILE.merged"
+            sed -i "s/^APP_VERSION=.*/APP_VERSION=${{ inputs.version }}/" "\$ENV_FILE.merged"
+            chmod +x scripts/deploy.sh
+            DOCKER_COMPOSE_ENV_FILE="\$ENV_FILE.merged" scripts/deploy.sh ${{ inputs.environment }} pull 2>&1
+          EOF
+
+      - name: Sauvegarder pb_data avant redémarrage
+        if: ${{ inputs.backup_before }}
+        env:
+          SLUG: ${{ steps.config.outputs.slug }}
+        run: |
+          echo "Sauvegarde du volume ${SLUG}-app-data sur ${{ vars.DEPLOY_HOST }}..."
+          ssh ${{ vars.DEPLOY_USER }}@${{ vars.DEPLOY_HOST }} bash << EOF 2>&1 | cat
+            set -e
+            VOLUME="${SLUG}-app-data"
+            if ! docker volume inspect "\$VOLUME" >/dev/null 2>&1; then
+              echo "Volume \$VOLUME absent (premier déploiement ?) : pas de sauvegarde."
+              exit 0
+            fi
+            # Arrêt du conteneur pour une copie SQLite cohérente ; deploy.sh up le relance juste après.
+            docker stop "${SLUG}-app" >/dev/null 2>&1 || true
+            STAMP=\$(date -u +%Y%m%d-%H%M%S)
+            ARCHIVE="\$HOME/${SLUG}/backups/\$STAMP.tar.gz"
+            docker run --rm -v "\$VOLUME:/data:ro" -v "\$HOME/${SLUG}/backups:/backup" alpine:3.21 \
+              tar czf "/backup/\$STAMP.tar.gz" -C /data .
+            echo "Sauvegarde écrite : \$ARCHIVE (\$(du -h "\$ARCHIVE" | cut -f1))"
+            # On garde les 10 dernières archives.
+            ls -1t "\$HOME/${SLUG}/backups"/*.tar.gz 2>/dev/null | tail -n +11 | xargs -r rm -f
+          EOF
+
+      - name: Déployer l'application
+        env:
+          SLUG: ${{ steps.config.outputs.slug }}
+        run: |
+          ssh ${{ vars.DEPLOY_USER }}@${{ vars.DEPLOY_HOST }} << EOF
+            set -e
+            cd ~/${SLUG}/infra/deploy
+
+            # Fusion des secrets dans le fichier d'environnement
+            ENV_FILE="overlays/${{ inputs.environment }}/.env.${{ inputs.environment }}"
+            SECRETS_FILE="overlays/${{ inputs.environment }}/.env.secrets"
+            # Les secrets ne restent pas sur le serveur, même si le déploiement échoue.
+            umask 077
+            trap 'rm -f "\$SECRETS_FILE" "\$ENV_FILE.merged"' EXIT
+            cp "\$ENV_FILE" "\$ENV_FILE.merged"
+            cat "\$SECRETS_FILE" >> "\$ENV_FILE.merged"
+
+            # Mise à jour de la version
+            sed -i "s/^APP_VERSION=.*/APP_VERSION=${{ inputs.version }}/" "\$ENV_FILE.merged"
+
+            # Déploiement
+            chmod +x scripts/deploy.sh
+            DOCKER_COMPOSE_ENV_FILE="\$ENV_FILE.merged" \
+              scripts/deploy.sh ${{ inputs.environment }} up 2>&1
+
+            echo "État des conteneurs..."
+            docker ps --filter "label=com.docker.compose.project=${SLUG}-${{ inputs.environment }}" \
+              --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
+          EOF
+
+      - name: Vérifier l'application
+        env:
+          SLUG: ${{ steps.config.outputs.slug }}
+        run: |
+          echo "Vérification de /api/health dans le conteneur ${SLUG}-app..."
+          ssh ${{ vars.DEPLOY_USER }}@${{ vars.DEPLOY_HOST }} bash << EOF 2>&1 | cat
+            set -e
+            for i in \$(seq 1 30); do
+              if docker exec ${SLUG}-app wget -q -O - http://localhost:8090/api/health 2>/dev/null; then
+                echo
+                echo "PocketBase répond (tentative \$i)."
+                exit 0
+              fi
+              sleep 2
+            done
+            echo "Erreur : /api/health ne répond pas après 60 s."
+            docker logs --tail 50 ${SLUG}-app || true
+            exit 1
+          EOF
+
+      - name: Résumé du déploiement
+        run: |
+          echo "======================================"
+          echo "Déploiement terminé"
+          echo "======================================"
+          echo "Projet : ${{ steps.config.outputs.slug }}"
+          echo "Environnement : ${{ inputs.environment }}"
+          echo "Version : ${{ inputs.version }}"
+          echo "Sauvegarde préalable : ${{ inputs.backup_before }}"
+          echo "======================================"
+
+      - name: Aide en cas d'échec
+        if: ${{ failure() }}
+        env:
+          SLUG: ${{ steps.config.outputs.slug }}
+        run: |
+          echo "Le déploiement a échoué. Consulter les journaux sur le serveur :"
+          echo "  ssh ${{ vars.DEPLOY_USER }}@${{ vars.DEPLOY_HOST }} -p ${{ vars.SSH_PORT || 22 }}"
+          echo "  cd ~/${SLUG}/infra/deploy && ./scripts/deploy.sh ${{ inputs.environment }} logs"
+          echo "Les sauvegardes pb_data sont dans ~/${SLUG}/backups/ sur le serveur."
