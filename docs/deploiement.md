@@ -6,6 +6,8 @@ volume. Le skill `/setup-deploy` guide la configuration, `/deploy` guide la mise
 
 ## Coolify (recommandé)
 
+Pour ce projet, la fiche pas à pas avec les valeurs exactes est [mise-en-ligne-coolify.md](mise-en-ligne-coolify.md).
+
 1. Pousser le dépôt sur GitHub.
 2. Dans Coolify : **+ New Resource > Docker Compose**, source Git, ce dépôt, branche `main`. Coolify lit
    `docker-compose.yaml` et construit l'image depuis le `Dockerfile` racine.

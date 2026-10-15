@@ -79,3 +79,18 @@ make test          # instance jetable + tests d'intégration
 ```
 
 `.claude/launch.json` lance l'instance locale sur le port 8097 pour l'aperçu.
+
+## Deployment Status
+
+Préparé le 2026-10-15, pas encore déployé. Fiche : `docs/mise-en-ligne-coolify.md`.
+- Deployment path: coolify
+- Domain: à choisir (proposition : https://diag.kosm.io)
+- Coolify resource: Docker Compose sur `mathieu-kosmio/perfia-eval` branche `main`, service `app` port 8090
+- Auto-deploy on push: à décider
+- Secrets à poser dans Coolify : APP_BREVO_API_KEY ; variables : APP_MAIL_FROM, APP_BREVO_LIST_ID (3)
+- Superuser created: pending
+- Console settings (Application name/URL, proxy headers, mail): pending
+- S3 backups: pending
+- E-mail channel: Brevo (compte « Kosmio Dev », expéditeur validé dev@kosm.io, liste 3 « PerfIA »)
+- Image Docker : construite et testée en local le 2026-10-15
+- Local env: .local/env.sh

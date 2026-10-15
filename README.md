@@ -80,6 +80,7 @@ Détails : [docs/contenu.md](docs/contenu.md).
 - [Serveur MCP](docs/mcp.md)
 - [Design](docs/design.md)
 - [Déploiement](docs/deploiement.md)
+- [Mise en ligne sur Coolify, pas à pas](docs/mise-en-ligne-coolify.md)
 
 ## Licence
 
