@@ -12,11 +12,13 @@
  * Animateur (clé de session dans l'en-tête X-Presenter-Key) :
  *   GET  /api/app/sessions/{code}/live      agrégats anonymes, rien sous 3 réponses
  * Équipe (compte users) :
- *   GET  /api/app/staff/sessions            sessions avec clé animateur et nombre de diagnostics
+ *   GET  /api/app/staff/sessions            sessions avec clé animateur, nombre de diagnostics et état de la relance
+ *   GET  /api/app/staff/sessions/{code}/followup   aperçu de la relance (date, destinataires, message)
  *   GET  /api/app/export.csv?session=code   export CSV (toutes les sessions sans paramètre)
  *
- * Tâches : envoi des rapports par e-mail (chaque minute), inscription à la liste Brevo des invitations (toutes les
- * 10 minutes), conservation des données (chaque nuit).
+ * Tâches : envoi des rapports par e-mail (chaque minute), relance des participants après une session (toutes les
+ * 5 minutes), inscription à la liste Brevo des invitations (toutes les 10 minutes), conservation des données
+ * (chaque nuit).
  * Note PocketBase : chaque handler s'exécute dans une VM isolée, d'où les require() à l'intérieur.
  */
 
@@ -72,6 +74,13 @@ routerAdd("GET", "/api/app/staff/sessions", (e) => {
   return e.json(200, { items: require(`${__hooks}/diag.js`).staffSessions($app) });
 }, $apis.requireAuth("users"));
 
+routerAdd("GET", "/api/app/staff/sessions/{code}/followup", (e) => {
+  const r = require(`${__hooks}/diag.js`).followupPreview($app, e.request.pathValue("code"));
+  e.response.header().set("Cache-Control", "no-store");
+  if (!r) return e.json(404, { message: "Session inconnue." });
+  return e.json(200, r);
+}, $apis.requireAuth("users"));
+
 routerAdd("GET", "/api/app/export.csv", (e) => {
   const code = String(e.request.url.query().get("session") || "");
   const csv = require(`${__hooks}/diag.js`).exportCsv($app, code);
@@ -102,6 +111,10 @@ onRecordDeleteRequest((e) => {
 
 cronAdd("perfia_reports", "* * * * *", () => {
   require(`${__hooks}/diag.js`).sendPendingReports($app);
+});
+
+cronAdd("perfia_relances", "*/5 * * * *", () => {
+  require(`${__hooks}/diag.js`).sendFollowups($app);
 });
 
 cronAdd("perfia_brevo", "*/10 * * * *", () => {

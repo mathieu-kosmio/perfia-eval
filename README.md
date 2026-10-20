@@ -16,7 +16,7 @@ Spécification : [docs/specification.md](docs/specification.md).
 | Participant | `/` ou `/s/<code>` | Parcours en 5 étapes : Vous, Maturité (3 axes, 5 niveaux), Cas d'usage (selon le maillon), Priorité, Feuille de route ; puis rapport et offres |
 | Participant | `/rapport.html#<jeton>` | Rapport imprimable en PDF, valable 12 mois |
 | Animateur | `/salle.html#<code>:<clé>` | Vue à projeter : QR code, nombre de réponses, niveaux moyens comparés à une mesure de référence, cas les plus choisis, matrice de la salle (rien sous 3 réponses) |
-| Équipe | `/equipe.html` | Sessions (création, ouverture, liens, QR code), diagnostics et suivi des prospects, export CSV, clé pour un agent IA |
+| Équipe | `/equipe.html` | Sessions (création, ouverture, liens, QR code, relance après la session), diagnostics et suivi des prospects, export CSV, clé pour un agent IA |
 | Agent IA de l'équipe | `/mcp` | Serveur MCP : sessions, statistiques, prospects, mise à jour du suivi |
 
 Les cas d'usage viennent de la Processothèque PerfIA. Le catalogue proposé dépend du maillon déclaré : bureau

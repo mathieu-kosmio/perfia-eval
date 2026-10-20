@@ -17,6 +17,8 @@ export const APP = {
   rdv_url: "https://cal.com/kosmio/ia-automatisation",
   site_url: "https://ia-automatisation.kosm.io",
   duree: { court: "3 minutes", complet: "5 à 7 minutes" },
+  // Signature de la relance envoyée après une session ; les réponses à ce message arrivent à `contact`.
+  signature: { nom: "Mathieu Pesin", role: "Associé, Kosmio" },
 };
 
 /* ---------- Profil du répondant ---------- */

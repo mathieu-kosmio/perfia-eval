@@ -4,7 +4,8 @@
  * Couvre : schéma, inscriptions fermées, sessions (valeurs par défaut, clé animateur masquée, lecture publique),
  * dépôt d'un diagnostic (validation, recalcul serveur, champ piège, session fermée, consentements), rapport par
  * jeton, isolement des données nominatives, vue salle (clé, seuil de 3 réponses), export CSV (accès, injection de
- * formule), serveur MCP de l'équipe, en-têtes de sécurité, limitation de débit.
+ * formule), serveur MCP de l'équipe, relance après session (valeurs par défaut, aperçu réservé à l'équipe,
+ * destinataires, contenu et seuil de 3 réponses), en-têtes de sécurité, limitation de débit.
  *
  * Aucune dépendance : node:test et fetch. Lancer avec `make test`.
  */
@@ -393,6 +394,91 @@ test("l'e-mail contient le lien du rapport, les offres, le rendez-vous de 30 min
   assert.match(mail.html, /Réserver 30 minutes/);
   for (const o of out.data.result.offres) assert.ok(mail.text.includes(o.titre), `offre ${o.code}`);
   assert.ok(!mail.html.includes("<script"), "pas de script dans l'e-mail");
+});
+
+/* ---------- Relance après la session ---------- */
+test("la migration ajoute les champs de la relance", async () => {
+  const s = await api("GET", "/api/collections/sessions", { token: admin });
+  const d = await api("GET", "/api/collections/diagnostics", { token: admin });
+  for (const n of ["followup", "followup_at", "followup_message", "followup_done_at", "followup_sent"]) assert.ok(s.data.fields.some((f) => f.name === n), n);
+  for (const n of ["followup_sent_at", "followup_attempts"]) assert.ok(d.data.fields.some((f) => f.name === n), n);
+});
+
+test("une nouvelle session est relancée le lendemain par défaut ; « aucune » coupe la relance", async () => {
+  const mk = (suffix, extra) => api("POST", records("sessions"), { token: staff, body: { code: `fu-${suffix}-${RUN}`, title: "Webinaire Xylofutur", date: "2026-11-26 09:00:00.000Z", ...extra } });
+  const auto = await mk("a", {});
+  assert.equal(auto.status, 200, JSON.stringify(auto.data));
+  assert.equal(auto.data.followup, "auto");
+  const off = await mk("b", { followup: "aucune" });
+  assert.equal(off.data.followup, "aucune");
+  const fixed = await mk("c", { followup_at: "2026-11-28 14:30:00.000Z" });
+  const list = (await api("GET", "/api/app/staff/sessions", { token: staff })).data.items;
+  const byCode = (c) => list.find((s) => s.code === c);
+  assert.equal(byCode(`fu-a-${RUN}`).followup_scheduled, "2026-11-27 09:00:00.000Z", "lendemain, même heure");
+  assert.equal(byCode(`fu-b-${RUN}`).followup_scheduled, "");
+  assert.equal(byCode(`fu-c-${RUN}`).followup_scheduled, "2026-11-28 14:30:00.000Z", "date choisie");
+  assert.equal(byCode(`fu-a-${RUN}`).followup_sent, 0);
+  assert.equal(fixed.data.followup, "auto");
+});
+
+test("l'aperçu de la relance est réservé à l'équipe et ne vise que les participants d'accord pour être recontactés", async () => {
+  const path = `/api/app/staff/sessions/${code}/followup`;
+  assert.equal((await api("GET", path)).status, 401);
+  assert.equal((await api("GET", `/api/app/staff/sessions/inconnue-${RUN}/followup`, { token: staff })).status, 404);
+  const r = await api("GET", path, { token: staff });
+  assert.equal(r.status, 200, JSON.stringify(r.data));
+  const all = (await api("GET", `${records("diagnostics")}?perPage=500&filter=${encodeURIComponent(`session = "${session.id}"`)}`, { token: staff })).data.items;
+  const ok = all.filter((d) => d.consent_contact && d.email);
+  assert.ok(ok.length < all.length, "la session compte au moins un participant sans accord de recontact");
+  assert.equal(r.data.recipients, ok.length);
+  assert.equal(r.data.responses, all.length);
+  assert.equal(r.data.subject, "Restitution des ateliers IBC : merci, et maintenant ?");
+  assert.match(r.data.html, /Et pour la suite/);
+  assert.ok(!r.data.html.includes("<script"));
+  assert.equal(r.headers.get("cache-control"), "no-store");
+});
+
+test("la relance donne les résultats de la salle à partir de 3 réponses, et rien en dessous", async () => {
+  const domain = requireCjs("../pocketbase/pb_hooks/domain.js");
+  const scoring = requireCjs("../pocketbase/pb_hooks/scoring.js");
+  const row = (cases, ia) => ({ maillon: "bureau_etudes", levels: { ia, donnees: 2, cadre: 1 }, pulse: 3, cases: cases.map((c) => ({ code: c, state: "veut", priority: 5 })) });
+  const rows = [row(["SKILL_TRV_LIRE_DCE", "SKILL_TRV_TRI_MAILS"], 1), row(["SKILL_TRV_LIRE_DCE"], 2), row(["SKILL_TRV_LIRE_DCE", "SKILL_TRV_TABLEAU_BORD"], 4)];
+  const st = scoring.aggregate(REF, rows, { top: 5 });
+  assert.equal(st.choix.total, 5);
+  assert.equal(st.choix.moyenne, 1.7);
+  assert.equal(st.choix.par_type.reduce((a, t) => a + t.count, 0), 5);
+  assert.ok(st.choix.familles.every((f) => f.code !== "tous"), "la famille « tous » n'est pas un métier");
+  assert.equal(st.choix.familles[0].label, REF.familles.ao.label, "la consultation domine : 3 choix");
+  assert.deepEqual(domain.percents([1, 1, 1]), [34, 33, 33]);
+
+  const out = await api("POST", "/api/app/diagnostics", { body: diag({ email: `relance.${RUN}@exemple.fr` }) });
+  const me = { firstname: "Camille", token: out.data.token, levels: { ia: 2, donnees: 2, cadre: 1 }, result: out.data.result };
+  const s = { title: "Restitution IBC", date: "2026-10-16 08:00:00.000Z", flow: "court", baseline: { label: "Atelier IBC 25/09", usage_ia: 2.1 },
+    followup_message: "Merci d'avoir joué le jeu en visio.\n\nCe qui ressort : les consultations." };
+  const mail = domain.followupEmail("PerfIA Diagnostic IA", "https://diag.exemple.fr", s, me, st, REF);
+  assert.equal(mail.subject, "Restitution IBC : merci, et maintenant ?");
+  assert.equal(mail.replyTo, REF.app.contact, "les réponses arrivent à l'équipe");
+  const unescape = (h) => h.replace(/&#39;/g, "'").replace(/&quot;/g, '"').replace(/&amp;/g, "&");
+  for (const part of [unescape(mail.html), mail.text]) {
+    assert.ok(part.includes(`https://diag.exemple.fr/rapport.html#${out.data.token}`), "lien du rapport");
+    assert.ok(part.includes(REF.app.rdv_url), "rendez-vous de 30 minutes");
+    assert.ok(part.includes("le 16 octobre"));
+    assert.ok(part.includes("3 participants ont fait le diagnostic"));
+    assert.ok(part.includes(`${REF.cases.SKILL_TRV_LIRE_DCE.label} : 3 participants`), "cas le plus choisi");
+    assert.ok(part.includes("Mesure de référence (Atelier IBC 25/09) : usage de l'IA à 2,1 sur 5"));
+    assert.ok(part.includes("Vos niveaux : IA 2 ; Données 2 ; Cadre 1"));
+    assert.ok(part.includes("Ce qui ressort : les consultations."), "mot d'ouverture de l'animateur");
+    assert.ok(part.includes(REF.app.signature.nom));
+    assert.ok(part.includes("version courte"), "invitation à la version complète");
+    assert.ok(!part.includes("—"), "pas de tiret cadratin");
+  }
+  assert.match(mail.html, /La session en quelques chiffres/);
+
+  const few = domain.followupEmail("PerfIA Diagnostic IA", "https://diag.exemple.fr", { ...s, followup_message: "" }, me, scoring.aggregate(REF, rows.slice(0, 2)), REF);
+  assert.ok(!few.html.includes("quelques chiffres") && !few.text.includes("participants ont"), "rien sous 3 réponses");
+  assert.ok(few.html.includes("Revoir ma feuille de route") && few.html.includes("Et pour la suite"));
+  const esc = domain.followupEmail("A", "https://x", { title: "<b>Atelier</b>", followup_message: "<img src=x>" }, { firstname: "<i>", token: "t", result: {} }, null, REF);
+  assert.ok(!esc.html.includes("<img src=x>") && !esc.html.includes("<b>Atelier</b>"), "textes échappés");
 });
 
 /* ---------- Bords ---------- */

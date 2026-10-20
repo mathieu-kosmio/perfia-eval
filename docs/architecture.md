@@ -57,6 +57,8 @@ rejoué (bouton, ou au prochain chargement).
 | Tâche | Fréquence | Rôle |
 |---|---|---|
 | `perfia_reports` | chaque minute | envoie les feuilles de route en attente (20 par passage, 3 essais) ; `APP_SEND_REPORTS=0` la coupe |
+| `perfia_relances` | toutes les 5 minutes | envoie la relance des sessions dont l'heure est passée, aux participants d'accord pour être recontactés (20 par session et par passage, 3 essais, réponses vers le contact Kosmio) ; `APP_SEND_REPORTS=0` la coupe |
+| `perfia_brevo` | toutes les 10 minutes | inscrit à la liste Brevo des invitations les participants qui l'ont demandé (consentement 4) |
 | `perfia_retention` | chaque nuit | efface l'identité après 12 mois sans accord de recontact, supprime après 36 mois |
 | `perfia_purge_unverified` | chaque nuit | supprime les comptes d'équipe jamais vérifiés (héritée du squelette) |
 

@@ -31,6 +31,9 @@ onMailerSend((e) => {
   if (msg.text) body.textContent = msg.text;
   if (msg.cc && msg.cc.length) body.cc = msg.cc.map(addr);
   if (msg.bcc && msg.bcc.length) body.bcc = msg.bcc.map(addr);
+  // Réponses dirigées vers une autre adresse que l'expéditeur (relance après session : réponses à l'équipe).
+  const replyTo = msg.headers && msg.headers["Reply-To"];
+  if (replyTo) body.replyTo = { email: String(replyTo) };
 
   const res = $http.send({
     url: "https://api.brevo.com/v3/smtp/email",

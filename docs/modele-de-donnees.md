@@ -23,6 +23,10 @@ Une session par intervention.
 | `presenter_key` | texte **masqué** | clé de la vue salle, générée à la création |
 | `status` | `brouillon` \| `ouverte` \| `fermee` | défaut `brouillon` ; seule une session ouverte accepte des réponses |
 | `notes` | texte | interne |
+| `followup` | `auto` \| `aucune` | relance après la session ; `auto` à la création, vide (donc aucune) pour les sessions antérieures |
+| `followup_at` | date | envoi de la relance ; vide : le lendemain de `date`, même heure |
+| `followup_message` | texte, 1 500 | mot d'ouverture de l'animateur, facultatif |
+| `followup_done_at`, `followup_sent` | date, nombre | fin de l'envoi et nombre de relances parties (posés par la tâche) |
 
 Règles : tout est réservé à l'équipe. Une session qui a des diagnostics ne se supprime pas (on la ferme).
 
@@ -50,6 +54,7 @@ Une réponse. Créée uniquement par `POST /api/app/diagnostics`.
 | `report_status`, `report_attempts`, `report_sent_at` | | envoi de la feuille de route par e-mail |
 | `report_requests` | nombre | renvois demandés par le participant (3 au plus) |
 | `brevo_synced_at` | date | inscription à la liste Brevo des invitations (consentement 4) |
+| `followup_sent_at`, `followup_attempts` | date, nombre | relance après la session (consentement 2), 3 essais au plus |
 | `crm_ref`, `crm_synced_at` | | synchronisation future vers le pipe Notion |
 | `anonymized` | booléen | identité effacée par la tâche de conservation |
 
@@ -95,7 +100,8 @@ squelette, inchangés.
 | `GET /api/app/report/{token}` | public, jeton | rapport, sans e-mail ni téléphone (adresse masquée seulement) ; 404 si inconnu ou de plus de 12 mois |
 | `POST /api/app/report/{token}/email` | public, jeton | renvoi de la feuille de route par e-mail ; 202, puis 429 après 3 renvois |
 | `GET /api/app/sessions/{code}/live` | clé animateur (`X-Presenter-Key`) | agrégats anonymes ; rien sous 3 réponses |
-| `GET /api/app/staff/sessions` | équipe | sessions avec clé animateur et nombre de diagnostics |
+| `GET /api/app/staff/sessions` | équipe | sessions avec clé animateur, nombre de diagnostics et état de la relance (`followup_scheduled`) |
+| `GET /api/app/staff/sessions/{code}/followup` | équipe | aperçu de la relance : date prévue, destinataires à ce jour, objet et message |
 | `GET /api/app/export.csv?session=code` | équipe | export CSV (`;`, BOM UTF-8), formules neutralisées |
 | `POST /api/app/keys` | équipe | clé MCP personnelle |
 | `/mcp`, `/llms.txt`, `/.well-known/*`, `/oauth/*` | voir `docs/mcp.md` | serveur MCP et OAuth |

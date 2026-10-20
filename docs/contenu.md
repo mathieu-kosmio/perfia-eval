@@ -14,7 +14,7 @@ en brouillon (`draft_ai`).
 
 | Export | Contenu |
 |---|---|
-| `APP` | nom, coédition, contact, lien de rendez-vous, durées annoncées |
+| `APP` | nom, coédition, contact (reçoit aussi les réponses à la relance), lien de rendez-vous, durées annoncées, signature de la relance après session |
 | `MAILLONS` | maillons proposés et catalogue associé (`bureau_etudes`, `construction_bois`, `scierie`, `menuiserie`, `transversal`) |
 | `FONCTIONS`, `EFFECTIFS` | listes de l'étape « Vous » |
 | `NIVEAUX` | noms des 5 niveaux (stades d'un peuplement : Semis, Fourré, Gaulis, Perchis, Futaie) |

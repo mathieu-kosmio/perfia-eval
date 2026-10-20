@@ -27,8 +27,8 @@ pocketbase/
   pb_hooks/
     scoring.js                  SOURCE UNIQUE des règles de calcul (recopiée dans web/js/scoring.js par make referentiel)
     referentiel.js              GÉNÉRÉ : ne pas modifier
-    domain.js                   point unique métier côté serveur : statuts, durées de conservation, e-mail, export, consignes MCP
-    diag.js, diag.pb.js         sessions, dépôt d'un diagnostic, rapport, vue salle, export, envoi des rapports, conservation
+    domain.js                   point unique métier côté serveur : statuts, durées de conservation, e-mails (rapport, relance), export, consignes MCP
+    diag.js, diag.pb.js         sessions, dépôt d'un diagnostic, rapport, vue salle, export, envoi des rapports, relance après session, conservation
     mcp.js, mcp.pb.js           serveur MCP de l'équipe
     oauth.js, oauth.pb.js       OAuth 2.1 devant /mcp
     account.js, account.pb.js   alignement console vers compte d'équipe, révocation des clés MCP

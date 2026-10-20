@@ -266,7 +266,46 @@
       return { code: k, label: def.label, type: def.type, count: c.count, prio_mean: Math.round((c.prio / c.count) * 10) / 10, effort: def.effort };
     }).sort(function (a, b) { return (b.count - a.count) || (b.prio_mean - a.prio_mean); });
     out.top = top.slice(0, opts.top || 8);
+    out.choix = choices(ref, rows);
     return out;
+  }
+
+  /** Famille d'un cas dans le catalogue du maillon, sinon la première famille qui le contient. */
+  function familyOf(ref, maillon, code) {
+    var cats = [catalogueOf(ref, maillon)].concat(Object.keys(ref.catalogues));
+    for (var i = 0; i < cats.length; i++) {
+      var fams = (ref.catalogues[cats[i]] || {}).familles || [];
+      for (var j = 0; j < fams.length; j++) if ((fams[j].cases || []).indexOf(code) >= 0) return fams[j].famille;
+    }
+    return "";
+  }
+
+  /**
+   * Cas souhaités par la salle : total, moyenne par participant, répartition par type de cas et familles les plus
+   * citées (la famille « tous » ne dit rien d'un métier : elle n'est pas comptée). Sert à la relance après session.
+   */
+  function choices(ref, rows) {
+    var total = 0, types = {}, fams = {};
+    rows.forEach(function (r) {
+      (r.cases || []).forEach(function (s) {
+        var def = ref.cases[s.code];
+        if (s.state !== "veut" || !def) return;
+        total++;
+        types[def.type] = (types[def.type] || 0) + 1;
+        var f = familyOf(ref, r.maillon, s.code);
+        if (f && f !== "tous") fams[f] = (fams[f] || 0) + 1;
+      });
+    });
+    var familles = Object.keys(fams).map(function (k) {
+      return { code: k, label: (ref.familles[k] || {}).label || k, count: fams[k] };
+    }).sort(function (a, b) { return b.count - a.count; });
+    return {
+      total: total,
+      moyenne: rows.length ? Math.round((total / rows.length) * 10) / 10 : 0,
+      par_type: Object.keys(ref.types).map(function (k) { return { code: k, label: ref.types[k].label, count: types[k] || 0 }; })
+        .sort(function (a, b) { return b.count - a.count; }),
+      familles: familles.slice(0, 3),
+    };
   }
 
   return {

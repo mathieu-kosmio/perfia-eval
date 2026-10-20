@@ -70,6 +70,9 @@ function prepareSession(rec, isNew) {
   if (!rec.getString("flow")) rec.set("flow", "complet");
   if (!rec.getString("identity_position")) rec.set("identity_position", "debut");
   if (!rec.getString("status")) rec.set("status", "brouillon");
+  // Relance automatique par défaut pour une nouvelle session ; « aucune » la coupe. Les sessions antérieures à la
+  // relance n'ont pas de valeur et n'en reçoivent pas.
+  if (isNew && !rec.getString("followup")) rec.set("followup", "auto");
   const m = rec.getString("default_maillon");
   if (m && !REF().maillons.some((x) => x.code === m)) throw new BadRequestError(`Maillon inconnu : « ${m} ».`);
   const baseline = json(rec, "baseline");
@@ -86,10 +89,16 @@ function staffSessions(app) {
   const rows = arrayOf(new DynamicModel({ session: "", n: 0 }));
   app.db().newQuery("SELECT session, COUNT(*) AS n FROM diagnostics GROUP BY session").all(rows);
   rows.forEach((r) => { counts[r.session] = r.n; });
-  return app.findRecordsByFilter("sessions", "id != ''", "-date,-created", 500, 0).map((rec) => Object.assign(publicSession(rec), {
-    id: rec.id, presenter_key: rec.getString("presenter_key"), notes: rec.getString("notes"), baseline: json(rec, "baseline"),
-    diagnostics: counts[rec.id] || 0, created: rec.getString("created"),
-  }));
+  return app.findRecordsByFilter("sessions", "id != ''", "-date,-created", 500, 0).map((rec) => {
+    const t = followupTime(rec);
+    return Object.assign(publicSession(rec), {
+      id: rec.id, presenter_key: rec.getString("presenter_key"), notes: rec.getString("notes"), baseline: json(rec, "baseline"),
+      diagnostics: counts[rec.id] || 0, created: rec.getString("created"),
+      followup: rec.getString("followup") || "aucune", followup_at: rec.getString("followup_at"),
+      followup_message: rec.getString("followup_message"), followup_scheduled: t ? iso(new Date(t)) : "",
+      followup_done_at: rec.getString("followup_done_at"), followup_sent: rec.getInt("followup_sent"),
+    });
+  });
 }
 
 /* ---------- Dépôt d'un diagnostic ---------- */
@@ -195,12 +204,110 @@ function liveFor(app, code, key) {
   if (!session) return null;
   const expected = session.getString("presenter_key");
   if (!expected || $security.sha256(String(key || "")) !== $security.sha256(expected)) return null;
-  const rows = app.findRecordsByFilter("diagnostics", "session = {:s}", "-created", 2000, 0, { s: session.id })
-    .map((r) => ({ levels: json(r, "levels") || {}, pulse: r.getInt("pulse") || null, cases: json(r, "cases") || [] }));
   return {
     session: Object.assign(publicSession(session), { baseline: json(session, "baseline") }),
     pulse_question: session.getString("pulse_question") || REF().pulse_default,
-    stats: S().aggregate(REF(), rows),
+    stats: S().aggregate(REF(), sessionRows(app, session.id, Date.now())),
+  };
+}
+
+/** Diagnostics d'une session déposés jusqu'à `until` (ms), au format attendu par scoring.aggregate. */
+function sessionRows(app, sessionId, until) {
+  return app.findRecordsByFilter("diagnostics", "session = {:s} && created <= {:t}", "-created", 2000, 0, { s: sessionId, t: iso(new Date(until)) })
+    .map((r) => ({ maillon: r.getString("maillon"), levels: json(r, "levels") || {}, pulse: r.getInt("pulse") || null, cases: json(r, "cases") || [] }));
+}
+
+/* ---------- Relance après une session ---------- */
+
+/** Date d'envoi de la relance (ms) : followup_at, sinon le lendemain de la session ; 0 sans relance ou sans date. */
+function followupTime(rec) {
+  if (rec.getString("followup") !== "auto") return 0;
+  const at = parseDate(rec.getString("followup_at"));
+  if (at) return at;
+  const day = parseDate(rec.getString("date"));
+  return day ? day + D().FOLLOWUP_DELAY_HOURS * 3600 * 1000 : 0;
+}
+
+// Destinataires : recontact accepté, adresse présente, pas encore servis, diagnostic déposé avant l'envoi.
+const FOLLOWUP_FILTER = "session = {:s} && consent_contact = true && anonymized = false && email != '' && followup_sent_at = '' && followup_attempts < {:max} && created <= {:t}";
+
+function followupParams(session, until) {
+  return { s: session.id, max: D().FOLLOWUP_MAX_ATTEMPTS, t: iso(new Date(until)) };
+}
+
+/** Champs de la session utiles au message. */
+function followupSession(session) {
+  return {
+    title: session.getString("title"), date: session.getString("date"), flow: session.getString("flow"),
+    followup_message: session.getString("followup_message"), baseline: json(session, "baseline"),
+  };
+}
+
+/**
+ * Envoie les relances dues (date passée, session ni en brouillon ni déjà traitée), 20 messages par session et par
+ * passage, 3 essais par participant. La session est marquée traitée quand plus personne n'attend la relance.
+ * Coupé par APP_SEND_REPORTS=0, comme l'envoi des rapports.
+ */
+function sendFollowups(app) {
+  if (String($os.getenv("APP_SEND_REPORTS") || "") === "0") return 0;
+  const d = D(), ref = REF(), meta = app.settings().meta;
+  const base = String(meta.appURL || "").replace(/\/+$/, "");
+  const now = Date.now();
+  let sent = 0;
+  app.findRecordsByFilter("sessions", "followup = 'auto' && followup_done_at = '' && status != 'brouillon'", "date", 50, 0).forEach((session) => {
+    const t = followupTime(session);
+    if (!t || t > now) return;
+    const params = followupParams(session, t), ctx = followupSession(session);
+    const st = S().aggregate(ref, sessionRows(app, session.id, t), { top: 5 });
+    app.findRecordsByFilter("diagnostics", FOLLOWUP_FILTER, "created", 20, 0, params).forEach((rec) => {
+      const diag = decode(rec);
+      const mail = d.followupEmail(meta.appName, base, ctx, diag, st, ref);
+      try {
+        app.newMailClient().send(new MailerMessage({
+          from: { address: meta.senderAddress, name: meta.senderName || meta.appName },
+          to: [{ address: diag.email, name: `${diag.firstname} ${diag.lastname}`.trim() }],
+          subject: mail.subject, html: mail.html, text: mail.text, headers: { "Reply-To": mail.replyTo },
+        }));
+        rec.set("followup_sent_at", new Date().toISOString());
+        session.set("followup_sent", session.getInt("followup_sent") + 1);
+        sent++;
+      } catch (err) {
+        rec.set("followup_attempts", rec.getInt("followup_attempts") + 1);
+        app.logger().warn("perfia: envoi de la relance impossible", "id", rec.id, "essai", rec.getInt("followup_attempts"), "err", String(err));
+      }
+      app.saveNoValidate(rec);
+    });
+    if (!app.findRecordsByFilter("diagnostics", FOLLOWUP_FILTER, "", 1, 0, params).length) {
+      session.set("followup_done_at", new Date().toISOString());
+      app.logger().info("perfia: relance terminée", "session", session.getString("code"), "envoyes", session.getInt("followup_sent"));
+    }
+    app.saveNoValidate(session);
+  });
+  return sent;
+}
+
+/**
+ * Aperçu de la relance pour l'équipe : date prévue, état, nombre de destinataires à ce jour et message tel qu'il
+ * partirait ou est parti (pour le premier destinataire, sinon pour un participant fictif sans cas). Null si la
+ * session n'existe pas.
+ */
+function followupPreview(app, code) {
+  const session = findSession(app, code);
+  if (!session) return null;
+  const d = D(), ref = REF(), meta = app.settings().meta;
+  const base = String(meta.appURL || "").replace(/\/+$/, "");
+  const t = followupTime(session), until = t ? Math.min(t, Date.now()) : Date.now();
+  const recipients = app.findRecordsByFilter("diagnostics", FOLLOWUP_FILTER, "created", 2000, 0, followupParams(session, until));
+  const st = S().aggregate(ref, sessionRows(app, session.id, until), { top: 5 });
+  // Relance déjà partie : plus personne n'attend, on montre le message reçu par le premier destinataire.
+  const first = recipients[0] || app.findRecordsByFilter("diagnostics", "session = {:s} && followup_sent_at != ''", "followup_sent_at", 1, 0, { s: session.id })[0];
+  const sample = first ? decode(first) : { firstname: "Prénom", token: "exemple", levels: {}, result: {} };
+  const mail = d.followupEmail(meta.appName, base, followupSession(session), sample, st, ref);
+  return {
+    followup: session.getString("followup") || "aucune", scheduled_at: t ? iso(new Date(t)) : "",
+    done_at: session.getString("followup_done_at"), sent: session.getInt("followup_sent"),
+    recipients: recipients.length, responses: st.n, stats_ready: st.ready, sample: first ? "participant" : "fictif",
+    subject: mail.subject, html: mail.html, text: mail.text,
   };
 }
 
@@ -320,4 +427,5 @@ function purge(app) {
 module.exports = {
   TOKEN_RE, CODE_RE, json, findSession, publicSession, decode, prepareSession, staffSessions,
   createDiagnostic, reportFor, requestReport, liveFor, exportCsv, sendPendingReports, syncBrevoContacts, purge,
+  followupTime, sendFollowups, followupPreview,
 };

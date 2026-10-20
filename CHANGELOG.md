@@ -1,5 +1,25 @@
 # Journal des versions
 
+## 0.2.0 (2026-10-19)
+
+**Ajouté**
+- Relance après la session : le lendemain (ou à la date choisie), un e-mail aux participants qui ont accepté d'être
+  recontactés. Il remercie, reprend le mot d'ouverture de l'animateur, rappelle la feuille de route et les cas à
+  tester, donne les résultats anonymes de la salle à partir de 3 réponses (participants, cas retenus, répartition
+  par type, besoins les plus cités, niveaux déclarés, top 5 des cas) et propose la suite (réponse directe, rendez-vous
+  de 30 minutes, offre, diagnostic complet à transmettre, ressources). Les réponses arrivent au contact Kosmio
+  (en-tête Reply-To, transmis à Brevo).
+- Tâche `perfia_relances` (toutes les 5 minutes), route `GET /api/app/staff/sessions/{code}/followup` (aperçu).
+- Page Équipe : réglage de la relance dans le formulaire de session (automatique ou aucune, date, mot d'ouverture),
+  état et aperçu du message dans la vue de la session, mention « relancé » par participant.
+- Agrégats de session : cas retenus, moyenne par participant, répartition par type, familles les plus citées.
+- Migration `1792200000_followup.js` ; les sessions existantes restent sans relance.
+- Signature de la relance dans `content/editorial.mjs` (`APP.signature`).
+
+**Modifié**
+- Gabarits d'e-mail : mise en page commune au rapport et à la relance (`domain.js`).
+- Notice sur les données personnelles : le recontact après une session est décrit.
+
 ## 0.1.1 (2026-10-15)
 
 **Modifié**

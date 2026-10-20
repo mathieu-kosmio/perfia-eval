@@ -38,6 +38,7 @@
 | Rapport sans e-mail ni téléphone (adresse masquée) | `reportFor` | le rapport se lit avec son jeton… |
 | Renvoi par e-mail borné à 3 par diagnostic, vers l'adresse enregistrée seulement | `requestReport` | le rapport donne l'adresse masquée et permet 3 renvois… |
 | Clé animateur masquée, passée en en-tête | `liveFor`, `salle.js` | la vue salle exige la clé animateur |
+| Relance seulement avec l'accord de recontact, résultats de la salle à partir de 3 réponses, aperçu réservé à l'équipe | `sendFollowups`, `followupPreview`, `followupEmail` | l'aperçu de la relance est réservé à l'équipe… ; la relance donne les résultats de la salle à partir de 3 réponses… |
 | Agrégats à partir de 3 réponses, sans nom | `scoring.aggregate` | la vue salle n'agrège qu'à partir de 3 réponses |
 | Réponses et résultat non modifiables par l'équipe | `diagnostics.updateRule` | l'équipe met à jour le suivi, jamais les réponses |
 | Export réservé à l'équipe, formules neutralisées | `exportCsv` | l'export CSV est réservé… |
@@ -54,7 +55,8 @@
 - **Conservation** : rapport consultable 12 mois ; identité effacée après 12 mois sans accord de recontact ;
   suppression 36 mois après la dernière mise à jour (tâche `perfia_retention`).
 - **Hébergement** : en Union européenne (serveur Coolify Kosmio), sauvegardes S3 en Union européenne.
-- **Sous-traitant e-mail** : Brevo (société française, hébergement en Union européenne) envoie les feuilles de route et
+- **Sous-traitant e-mail** : Brevo (société française, hébergement en Union européenne) envoie les feuilles de route,
+  la relance après une session (consentement 2 seulement) et
   reçoit, avec le consentement 4 seulement, le contact des participants qui demandent les invitations
   (`APP_BREVO_LIST_ID`).
 - **Pas de traceur** : aucun cookie, aucune police ni script tiers ; le stockage local du navigateur ne sert qu'à

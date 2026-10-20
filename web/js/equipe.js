@@ -10,6 +10,11 @@
   const TK = "perfia-equipe";
   let auth = null, ref = null, sessions = [], current = null, diags = [], editing = null, msg = "";
 
+  const parse = (s) => { const t = Date.parse(String(s || "").replace(" ", "T")); return isNaN(t) ? null : new Date(t); };
+  const fmtDateTime = (s) => { const d = parse(s); return d ? d.toLocaleString("fr-FR", { day: "numeric", month: "long", year: "numeric", hour: "2-digit", minute: "2-digit" }) : ""; };
+  // Champ datetime-local : heure locale du navigateur, sans fuseau.
+  const toLocalInput = (s) => { const d = parse(s); return d ? new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 16) : ""; };
+
   const tokenGet = () => { try { return JSON.parse(sessionStorage.getItem(TK) || "null"); } catch (_) { return null; } };
   const tokenSet = (v) => { try { v ? sessionStorage.setItem(TK, JSON.stringify(v)) : sessionStorage.removeItem(TK); } catch (_) {} };
   const authed = (method, path, body) => U.api(method, path, body, { Authorization: auth.token });
@@ -83,7 +88,7 @@
       <td>${esc(lab(ref.maillons, d.maillon))}</td>
       <td>IA ${d.levels ? d.levels.ia : "?"} · D ${d.levels ? d.levels.donnees : "?"} · C ${d.levels ? d.levels.cadre : "?"}</td>
       <td>${((d.result || {}).cases || []).length}</td>
-      <td>${d.consent_contact ? "oui" : "non"}${d.consent_partner ? "<br><span class=\"small muted\">partage</span>" : ""}</td>
+      <td>${d.consent_contact ? "oui" : "non"}${d.consent_partner ? "<br><span class=\"small muted\">partage</span>" : ""}${d.followup_sent_at ? "<br><span class=\"small muted\">relancé</span>" : ""}</td>
       <td><select data-diag="${d.id}" aria-label="Suivi">${["nouveau", "contacte", "qualifie", "converti", "perdu"].map((v) => `<option value="${v}" ${d.lead_status === v ? "selected" : ""}>${v}</option>`).join("")}</select></td></tr>`).join("");
     return `<p><a href="#">← Toutes les sessions</a></p>
       <div class="row" style="justify-content:space-between"><h1>${esc(s.title)} <span class="status ${s.status}">${esc(s.status)}</span></h1>
@@ -94,12 +99,43 @@
         <p><b>Vue salle</b> (à projeter ; contient la clé animateur, ne pas diffuser)<br><a class="btn ghost sm" href="${esc(room)}" target="_blank" rel="noopener">Ouvrir la vue salle</a> <button type="button" class="linkbtn" data-act="copy" data-v="${esc(room)}">Copier le lien</button></p>
         <p class="small muted">Version ${esc(s.flow)} · identité ${s.identity_position === "fin" ? "en fin de parcours" : "en début"} · maillon par défaut : ${esc(lab(ref.maillons, s.default_maillon))}${s.status !== "ouverte" ? " · <b>la session doit être ouverte pour recevoir des réponses</b>" : ""}</p>
       </div></div></section>
+      ${viewFollowup(s)}
       <section class="card scroll"><div class="row" style="justify-content:space-between"><h2>${diags.length} diagnostic${diags.length > 1 ? "s" : ""}</h2><div class="row"><button type="button" class="btn ghost sm" data-act="reload">Actualiser</button><button type="button" class="btn primary sm" data-act="export" data-code="${esc(s.code)}">Exporter (CSV)</button></div></div>
       ${diags.length ? `<table class="list"><thead><tr><th>Date</th><th>Participant</th><th>Entreprise</th><th>Maillon</th><th>Niveaux</th><th>Cas</th><th>Recontact</th><th>Suivi</th></tr></thead><tbody>${rows}</tbody></table>` : '<p class="muted">Aucune réponse pour l\'instant.</p>'}</section>`;
   }
 
+  /** Relance après la session : état, destinataires à ce jour, aperçu du message à la demande. */
+  function viewFollowup(s) {
+    const waiting = diags.filter((d) => d.consent_contact && d.email && !d.followup_sent_at).length;
+    let state;
+    if (s.followup !== "auto") state = "Pas de relance pour cette session. Modifiez la session pour l'activer.";
+    else if (s.followup_done_at) state = `Relance envoyée le ${esc(fmtDateTime(s.followup_done_at))} à ${s.followup_sent} participant${s.followup_sent > 1 ? "s" : ""}.`;
+    else if (s.followup_scheduled) state = `Relance automatique prévue le <b>${esc(fmtDateTime(s.followup_scheduled))}</b>, pour les participants qui ont accepté d'être recontactés : ${waiting} à ce jour.`;
+    else state = "Relance automatique : donnez une date à la session pour la programmer.";
+    return `<section class="card" id="followup"><h2>Relance après la session</h2><p>${state}</p>
+      <p class="small muted">Le message remercie, rappelle la feuille de route et les cas à tester, donne les résultats anonymes de la salle (à partir de 3 réponses) et propose la suite. Les réponses arrivent à ${esc(ref.app.contact)}.</p>
+      <button type="button" class="btn ghost sm" data-act="followup">Aperçu du message</button><div id="fuout"></div></section>`;
+  }
+
+  async function showFollowup() {
+    const out = document.getElementById("fuout");
+    out.innerHTML = '<p class="small muted">Chargement…</p>';
+    try {
+      const r = await authed("GET", `/api/app/staff/sessions/${encodeURIComponent(current.code)}/followup`);
+      const pl = (n, w) => `${n} ${w}${n > 1 ? "s" : ""}`;
+      const parts = [];
+      if (!r.done_at) parts.push(`${pl(r.recipients, "destinataire")} à ce jour`);
+      parts.push(`${pl(r.responses, "réponse")} prise${r.responses > 1 ? "s" : ""} en compte${r.stats_ready ? "" : " : les résultats de la salle n'apparaissent qu'à partir de 3"}`);
+      parts.push(r.sample === "fictif" ? "aperçu pour un participant fictif" : r.done_at ? "message reçu par le premier destinataire" : "aperçu pour le premier destinataire");
+      out.innerHTML = `<p style="margin-top:12px"><b>Objet :</b> ${esc(r.subject)}</p>
+        <p class="small muted">${parts.join(" · ")}.</p>
+        <iframe title="Aperçu de la relance" sandbox="" style="width:100%;height:720px;border:1px solid var(--line);border-radius:8px"></iframe>`;
+      out.querySelector("iframe").srcdoc = r.html;
+    } catch (_) { out.innerHTML = '<p class="notice warn">Aperçu indisponible.</p>'; }
+  }
+
   function viewForm() {
-    const s = editing === "new" ? { flow: "complet", identity_position: "debut", status: "brouillon", baseline: null } : current;
+    const s = editing === "new" ? { flow: "complet", identity_position: "debut", status: "brouillon", baseline: null, followup: "auto" } : current;
     const b = s.baseline || {};
     const opt = (list, v) => list.map((o) => `<option value="${esc(o[0])}" ${v === o[0] ? "selected" : ""}>${esc(o[1])}</option>`).join("");
     return `<p><a href="#${editing === "new" ? "" : esc(current.code)}" data-act="cancel">← Annuler</a></p><h1>${editing === "new" ? "Nouvelle session" : "Modifier la session"}</h1>
@@ -118,7 +154,10 @@
         <div class="field"><label for="s-bl">Mesure de référence (libellé)</label><input id="s-bl" name="bl_label" value="${esc(b.label || "")}" placeholder="Atelier IBC 25/09"></div>
         <div class="field"><label for="s-bu">Référence usage IA (sur 5)</label><input id="s-bu" name="bl_usage" type="number" step="0.1" min="1" max="5" value="${esc(b.usage_ia || "")}"></div>
         <div class="field"><label for="s-bc">Référence question éclair (sur 5)</label><input id="s-bc" name="bl_clarte" type="number" step="0.1" min="1" max="5" value="${esc(b.clarte || "")}"></div>
+        <div class="field"><label for="s-fu">Relance après la session</label><select id="s-fu" name="followup">${opt([["auto", "Automatique"], ["aucune", "Aucune"]], s.followup || "aucune")}</select><p class="hint">Aux participants qui ont accepté d'être recontactés.</p></div>
+        <div class="field"><label for="s-fat">Envoi de la relance</label><input id="s-fat" name="followup_at" type="datetime-local" value="${esc(toLocalInput(s.followup_at))}"><p class="hint">Vide : le lendemain de la session, à la même heure.</p></div>
       </div>
+      <div class="field"><label for="s-fm">Mot d'ouverture de la relance (facultatif)</label><textarea id="s-fm" name="followup_message" maxlength="1500" aria-describedby="s-fm-h">${esc(s.followup_message || "")}</textarea><p class="hint" id="s-fm-h">Un ou deux paragraphes à votre nom, placés après le remerciement : l'ambiance de la séance, ce que vous en retenez. Une ligne vide sépare deux paragraphes.</p></div>
       <div class="field"><label for="s-notes">Notes internes</label><textarea id="s-notes" name="notes">${esc(s.notes || "")}</textarea></div>
       <p class="notice warn" id="ferr" hidden></p>
       <button class="btn primary">${editing === "new" ? "Créer la session" : "Enregistrer"}</button></form>`;
@@ -127,9 +166,11 @@
   /* ---------- Actions ---------- */
   async function saveForm(form) {
     const fd = new FormData(form), out = new FormData();
-    ["title", "date", "organizer_name", "default_maillon", "flow", "identity_position", "status", "pulse_question", "partner_consent_label", "notes"].forEach((k) => out.append(k, fd.get(k) || ""));
+    ["title", "date", "organizer_name", "default_maillon", "flow", "identity_position", "status", "pulse_question", "partner_consent_label", "notes", "followup", "followup_message"].forEach((k) => out.append(k, fd.get(k) || ""));
     if (editing === "new") out.append("code", String(fd.get("code") || "").trim().toLowerCase());
     if (out.get("date")) out.set("date", `${out.get("date")} 09:00:00.000Z`);
+    const fat = fd.get("followup_at");
+    out.append("followup_at", fat ? new Date(String(fat)).toISOString().replace("T", " ") : "");
     const bl = {};
     if (fd.get("bl_label")) bl.label = String(fd.get("bl_label"));
     if (fd.get("bl_usage")) bl.usage_ia = Number(fd.get("bl_usage"));
@@ -166,6 +207,7 @@
       await loadSessions(); route();
     }
     if (act === "reload") { await loadDiags(); render(); }
+    if (act === "followup") await showFollowup();
     if (act === "copy") { try { await navigator.clipboard.writeText(b.getAttribute("data-v")); b.textContent = "Copié"; } catch (_) { window.prompt("Copiez le lien :", b.getAttribute("data-v")); } }
     if (act === "export") {
       const code = b.getAttribute("data-code");

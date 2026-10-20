@@ -206,6 +206,26 @@ Le bouton *Terminer : voir ma feuille de route* enregistre le diagnostic (§9) e
   de rendez-vous.
 - *Retour à l'accueil*.
 
+### 4.8 Relance après la session
+
+Ajoutée le 19/10/2026 sur le modèle des relances d'atelier observées sur le terrain : le lendemain, l'animateur
+remercie, rappelle la feuille de route, donne les résultats de la salle et propose la suite.
+
+- **Qui la reçoit** : les participants de la session qui ont accepté d'être recontactés (consentement 2), avec une
+  adresse, avant l'heure d'envoi. Pas de relance pour le lien sans session.
+- **Quand** : automatiquement le lendemain de la session, à la même heure ; l'animateur peut choisir une autre date
+  ou couper la relance (« Aucune ») dans la page Équipe. Les sessions créées avant cette fonction n'ont pas de relance.
+- **Ce qu'elle contient** :
+  - le remerciement ;
+  - un mot d'ouverture facultatif de l'animateur ;
+  - le rappel de la feuille de route et des cas « À tester tout de suite » ;
+  - à partir de 3 réponses seulement, les résultats anonymes de la salle : nombre de participants, cas retenus, répartition IA, automatisation et données, besoins les plus cités, niveaux déclarés et mesure de référence, top 5 des cas ;
+  - puis « Et pour la suite ? » : répondre au message (les réponses arrivent au contact Kosmio), réserver 30 minutes, l'offre recommandée, le diagnostic complet à faire ou à transmettre, les ressources.
+- **Contrôle** : la page Équipe affiche la date prévue, le nombre de destinataires et un aperçu du message tel qu'il
+  partira ; une fois envoyée, la date et le nombre de messages partis.
+- Pas de gain chiffré, pas d'interprétation automatique des résultats : le commentaire revient à l'animateur, dans
+  son mot d'ouverture.
+
 ---
 
 ## 5. Rapport
