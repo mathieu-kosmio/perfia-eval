@@ -14,14 +14,14 @@
 #   --background     lance le serveur avec nohup, journal dans .local/server.log
 #   --download-only  télécharge le binaire et s'arrête (utilisé par scripts/test.sh)
 #
-# Variables : PB_VERSION (défaut 0.40.3), PB_PORT (défaut 8090),
+# Variables : PB_VERSION (défaut 0.40.6), PB_PORT (défaut 8090),
 #             PB_ADMIN_EMAIL, PB_ADMIN_PASSWORD, APP_* (voir docs/deploiement.md)
 # =============================================================================
 set -euo pipefail
 
 cd "$(dirname "${BASH_SOURCE[0]}")/.."
 
-PB_VERSION="${PB_VERSION:-0.40.3}"
+PB_VERSION="${PB_VERSION:-0.40.6}"
 LOCAL_DIR=".local"
 PB_BIN="$LOCAL_DIR/pocketbase"
 PB_VERSION_FILE="$LOCAL_DIR/pb_version"

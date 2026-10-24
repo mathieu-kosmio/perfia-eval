@@ -4,12 +4,12 @@
 # ATTENTION : ce fichier et infra/docker/app/Dockerfile doivent rester IDENTIQUES.
 # Celui-ci sert à Coolify (build depuis la racine du dépôt) ; l'autre sert à la CI
 # et au Makefile. Toute modification doit être reportée dans les deux.
-FROM alpine:3.21
+FROM alpine:3.23
 
-ARG PB_VERSION=0.40.3
+ARG PB_VERSION=0.40.6
 # Empreintes SHA-256 de l'archive officielle (checksums.txt de la release). À mettre à jour avec PB_VERSION.
-ARG PB_SHA256_AMD64=8d81b6b79add0e219373e922ebe1dddbee7f57fcff602e3585e0d2c654b983ce
-ARG PB_SHA256_ARM64=d5092815259f5bc2dffabf6a71da2168851c8d75c04d6e56f6e7a38c48941c70
+ARG PB_SHA256_AMD64=0e1f609158ed945f809f8a02ae012aa0427129c66ebb63c1aee76f2c0309373f
+ARG PB_SHA256_ARM64=d22c66ceb67ca92b7d767f36d826e848a276bcfa3c197ead20bf87c42208984f
 ARG TARGETARCH=amd64
 
 # hadolint ignore=DL3018

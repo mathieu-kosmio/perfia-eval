@@ -160,7 +160,7 @@ jobs:
             docker stop "${SLUG}-app" >/dev/null 2>&1 || true
             STAMP=\$(date -u +%Y%m%d-%H%M%S)
             ARCHIVE="\$HOME/${SLUG}/backups/\$STAMP.tar.gz"
-            docker run --rm -v "\$VOLUME:/data:ro" -v "\$HOME/${SLUG}/backups:/backup" alpine:3.21 \
+            docker run --rm -v "\$VOLUME:/data:ro" -v "\$HOME/${SLUG}/backups:/backup" alpine:3.23 \
               tar czf "/backup/\$STAMP.tar.gz" -C /data .
             echo "Sauvegarde écrite : \$ARCHIVE (\$(du -h "\$ARCHIVE" | cut -f1))"
             # On garde les 10 dernières archives.

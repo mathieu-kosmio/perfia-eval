@@ -10,7 +10,7 @@ services:
   # REVERSE PROXY
   # =============================================================================
   traefik:
-    image: traefik:${TRAEFIK_VERSION:-v3.6.1}
+    image: traefik:${TRAEFIK_VERSION:-v3.7.16}
     container_name: ${PROJECT_SLUG}-traefik
     command:
       - "--accesslog=true"

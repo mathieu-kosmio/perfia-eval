@@ -40,7 +40,7 @@ MIT), allégé : plus de multi-organisation, de votes, de commentaires, de progr
 
 ## Démarrage local
 
-Prérequis : Node.js 20 ou plus, `curl`, `unzip`.
+Prérequis : Node.js 22, 24 ou 26 (lignes maintenues), `curl`, `unzip`.
 
 ```bash
 mkdir -p .local && printf 'PB_ADMIN_EMAIL=admin@exemple.test\nPB_ADMIN_PASSWORD=un-mot-de-passe-local\nPB_PORT=8097\nSTAFF_EMAIL=equipe@exemple.test\nSTAFF_PASSWORD=un-autre-mot-de-passe\nAPP_SEND_REPORTS=0\n' > .local/env.sh

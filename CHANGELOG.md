@@ -1,5 +1,21 @@
 # Journal des versions
 
+## 0.2.1 (2026-10-24)
+
+**Sécurité**
+- PocketBase 0.40.3 → 0.40.6 : compilé avec Go 1.27.3 (correctifs `net/http`, dont un déni de service, et retrait de
+  l'autorité de certification eMudhra compromise pour les appels sortants vers Brevo), limite de taille des
+  miniatures. Empreintes SHA-256 mises à jour dans les deux Dockerfiles, défaut de `scripts/pb.sh` aligné.
+- Image de base `alpine:3.21` → `alpine:3.23` : la 3.21 ne reçoit plus de correctifs après le 1er novembre 2026
+  (paquet `ca-certificates` compris). Même changement pour le conteneur de sauvegarde de `deploy.yml`.
+- CI : Node.js 20 (fin de vie, failles d'octobre 2026 non corrigées) → Node.js 24. Prérequis de la documentation :
+  Node.js 22, 24 ou 26. Node ne sert qu'aux scripts et aux tests, il n'est pas dans l'image.
+- Déploiement sans Coolify (`infra/deploy/`) : Traefik v3.6.1 → v3.7.16, seule ligne encore corrigée. Configuration
+  vérifiée contre le guide de migration 3.7 (règles `Host` explicites, `redirectscheme`, défi HTTP ACME : inchangés).
+
+**Mise à niveau**
+- Redéployer la ressource dans Coolify pour reconstruire l'image. Aucune migration de schéma.
+
 ## 0.2.0 (2026-10-19)
 
 **Ajouté**

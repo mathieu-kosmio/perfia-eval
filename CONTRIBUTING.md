@@ -36,7 +36,7 @@ Règles de fond, à ne pas changer sans discussion préalable dans une issue :
 
 ## Installer
 
-Prérequis : Node.js 20+, `curl` et `unzip`. Docker n'est utile que pour construire l'image.
+Prérequis : Node.js 22, 24 ou 26 (lignes maintenues), `curl` et `unzip`. Docker n'est utile que pour construire l'image.
 
 ```bash
 git clone https://github.com/Kosmio/Lightweight-skeleton.git perfia-eval && cd perfia-eval
